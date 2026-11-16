@@ -1,7 +1,10 @@
 {
   "name": "shark-skills",
-  "owner": { "name": "shark-skills maintainers" },
-  "description": "Local marketplace of the shark engineering orchestration kit.",
+  "owner": {
+    "name": "Tushar Srivastava",
+    "url": "https://github.com/tusharsrivastava"
+  },
+  "description": "Marketplace of the shark engineering orchestration kit for Claude Code.",
   "plugins": [
     {
       "name": "shark",
