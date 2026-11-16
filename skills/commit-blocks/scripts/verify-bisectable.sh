@@ -24,6 +24,13 @@
 set -euo pipefail
 
 BASE="${1:-}"
+if [ "$BASE" = "--help" ] || [ "$BASE" = "-h" ]; then
+  echo "usage: verify-bisectable.sh <base-ref|--root> [gate command...]"
+  echo "  The gate is the project's gate:scoped or gate:full command; else VERIFY_GATE is used."
+  echo "  Optional: VERIFY_SETUP (setup before each gate), VERIFY_KEEP (paths kept between commits)."
+  echo "  Exit codes: 0 all commits pass; 1 a commit fails; 2 usage error."
+  exit 0
+fi
 if [ -z "$BASE" ]; then
   echo "usage: verify-bisectable.sh <base-ref|--root> [gate command...]" >&2
   exit 2
