@@ -1,194 +1,340 @@
-# shark: an orchestration kit for Claude Code
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.png">
+    <img alt="shark" src="assets/logo-light.png" width="520">
+  </picture>
+</p>
 
-| Item | Value |
-| --- | --- |
-| Document | Install and conventions guide |
-| Status | Draft for review |
-| Audience | Engineers who use Claude Code and want to run parallel builds, merges, reviews and debugging with subagents |
-| Systems | Plugin `shark` (`.claude-plugin/plugin.json`), marketplace `shark-skills` (`.claude-plugin/marketplace.json`) |
-| Related | `AGENTS.md` (the project file to copy), `docs/CONTRACT-v0.1.md` (the build contract of v0.1) |
+<p align="center"><b>Running Claude Code like an engineering team: one operator, parallel lanes, audited merges.</b></p>
 
-## 1. What the kit is
+<p align="center">
+  <a href="https://github.com/tusharsrivastava/shark-skills/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/tusharsrivastava/shark-skills?style=flat&color=0e7490"></a>
+  <a href="https://github.com/tusharsrivastava/shark-skills/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/tusharsrivastava/shark-skills?style=flat&color=0e7490"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-0e7490?style=flat"></a>
+  <a href="https://docs.claude.com/en/docs/claude-code/plugins"><img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude_Code-plugin-0e7490?style=flat&logo=claude&logoColor=white"></a>
+</p>
 
-`shark` is a Claude Code plugin (a package of agents, skills, MCP servers and output styles that Claude Code loads
-as one unit). It gives a session these parts:
+<p align="center">
+  <a href="#installation-2-minute-setup">Install</a> •
+  <a href="#why-shark-exists">Why <b>shark</b></a> •
+  <a href="#reference">Reference</a> •
+  <a href="#contributing">Contributing</a>
+</p>
 
-- an operator harness;
-- parallel build, merge and audit workflows;
-- root-cause debugging with a real debugger;
-- a design check;
-- documents in ASD-STE100.
+---
 
-The skills and the agents contain no project values. They read the commands, the invariants and the owner rules from the `AGENTS.md` (or `CLAUDE.md`) of
-the project.
+**My Claude Code setup for building real features with a team of agents.**
 
-## 2. Components
+Using a single Claude Code session for a small fix works fine. Using it for a real feature usually turns into a mess
+of conflicting edits, silently dropped rules during merges, half-baked bug patches, and a giant commit at the end.
 
-Claude Code puts the plugin name in front of each name: agent `shark:<agent>`, skill `/shark:<skill>`.
+Throwing more agents at it doesn't fix that on its own. Parallel agents with no shared plan just make code messier, faster.
 
-### 2.1 Agents
+**shark** is what I ended up with after building a production system this way.
 
-| Agent | What it does |
-| --- | --- |
-| `shark:architect` | Senior read-only review of the architecture, the code and its math, for accuracy. Costly: use it for a large design. |
-| `shark:lead-engineer` | Merges the branches of parallel lanes, checks them against the round contract, runs `gate:fast`, moves the integration branch. |
-| `shark:code-writer` | Implements a spec or a fix spec as production code, test first. |
-| `shark:code-debugger` | Finds the root cause of a defect with the debugger, writes a failing regression test and a fix spec. Changes no production code. |
-| `shark:doc-writer` | Writes specs (with a quantitative model), design notes, findings reports and runbooks in ASD-STE100. |
-| `shark:cookbook-writer` | Writes and checks tutorial chapters (the reading level included). |
-| `shark:invariant-guard` | Read-only audit of a diff against the project's `## Invariants` and a stack-neutral default catalogue. Returns findings with `file:line` evidence and a fix spec. Changes no file. |
+The main session never writes code. It becomes the **operator**: it briefs the subagents, checks what they hand
+back, and talks to you. Lanes build in parallel against one shared contract. Every merge gets audited, and every bug
+gets a root cause before it gets a fix.
 
-### 2.2 Skills
+Every rule in here exists because breaking it cost me hours. Steal them. Change them. Make them stricter for your
+project.
 
-| Skill | What it does |
-| --- | --- |
-| `/shark:operator` | The session harness. Sets the mode (feature, review, debug) and names the agent or skill for each situation. Invoke it first. |
-| `/shark:system-design` | Design check: SOLID, refactoring patterns, typed state, one rule in one place, pinned contracts, evaluation first. |
-| `/shark:debug-rca` | Steps through the running program with the debugger and writes a root cause analysis from observed values. |
-| `/shark:goal-loop` | Fix rounds toward one goal on N failing scenarios: classify, contract, fix in lanes, merge, run again. |
-| `/shark:port-audit` | Finds the rules that a rewrite lost, by a static audit of the deleting commits against production. |
-| `/shark:patch-fanout` | Ports many independent patch units in parallel, one agent and one branch for each unit. |
-| `/shark:lead-merge` | The long-running lead merges patch branches in batches from a queue file. |
-| `/shark:merge-audit` | A read-only reviewer checks each merge of the lead against the patch notes and the invariants. |
-| `/shark:commit-blocks` | Splits a working tree into conventional commits that each pass the gate (bisectable history). |
-| `/shark:handoff` | Records and prunes the handoff file (the state that carries between sessions). |
-| `/shark:gitignore` | Makes or refreshes `.gitignore` from gitignore.io templates and keeps the project rules. |
-| `/shark:cookbook-writing` | The method and the reading-level script behind `shark:cookbook-writer`. |
+## Installation (2-minute setup)
 
-### 2.3 Other parts
+### 1. Get the plugin
 
-| Part | File |
-| --- | --- |
-| Output style `shark:asd-ste100` | `output-styles/asd-ste100.md` |
-| Debugger MCP server `mcp-debugger` | `.mcp.json` |
-| Project file to copy (best-practice `AGENTS.md`) | `AGENTS.md` |
-| Mirror for other tools | `.agents/agents -> ../agents`, `.agents/skills -> ../skills` (relative symlinks) |
+In Claude Code:
 
-## 3. Install
-
-The kit is a local marketplace (a catalogue of plugins that Claude Code reads from a folder or a git repository).
-In the commands below, `/path/to/shark-skills` is the absolute path of the kit folder.
-
-1. In Claude Code, add the marketplace:
-
-   ```
-   /plugin marketplace add /path/to/shark-skills
-   ```
-
-2. Install the plugin:
-
-   ```
-   /plugin install shark@shark-skills
-   ```
-
-3. Choose the scope when Claude Code asks:
-
-| Scope | Effect | Use it when |
-| --- | --- | --- |
-| User | The plugin is on in each project on this machine. | You use the kit in all your repositories. |
-| Project | The setting goes in `.claude/settings.json` of the repository and is shared with the team. | The team uses the kit in this repository. |
-| Local | The setting goes in `.claude/settings.local.json` and is not shared. | You test the kit in one repository. |
-
-For a one-off session with no install, start Claude Code with the plugin folder:
-
-```
-claude --plugin-dir /path/to/shark-skills
+```text
+/plugin marketplace add tusharsrivastava/shark-skills
+/plugin install shark@shark-skills
 ```
 
-## 4. Update
+You'll also need git, and Node.js with `npx`. The debugger MCP server runs through it.
 
-1. Get the new version of the kit: `git pull` in the kit folder.
-2. In Claude Code, run `/plugin marketplace update shark-skills`.
-3. Start a new session. A running session keeps the old agents and skills.
+<details>
+<summary><strong>Try it without installing</strong></summary>
 
-## 5. Enable the kit in a repository
+```bash
+git clone https://github.com/tusharsrivastava/shark-skills
+claude --plugin-dir ./shark-skills
+```
 
-Put these keys in `.claude/settings.json` of the repository. A team member who opens the repository then gets
-the marketplace and the plugin.
+</details>
+
+<details>
+<summary><strong>Turn it on for your whole team</strong></summary>
+
+Add this to `.claude/settings.json` in your repo. Everyone who opens the repo gets the plugin.
 
 ```json
 {
   "extraKnownMarketplaces": {
-    "shark-skills": {
-      "source": { "source": "directory", "path": "/path/to/shark-skills" }
-    }
+    "shark-skills": { "source": { "source": "github", "repo": "tusharsrivastava/shark-skills" } }
   },
-  "enabledPlugins": {
-    "shark@shark-skills": true
-  },
+  "enabledPlugins": { "shark@shark-skills": true },
   "outputStyle": "shark:asd-ste100"
 }
 ```
 
-When the kit gets a git remote, change the source to `{ "source": "git", "url": "<remote URL>" }`.
+To update, run `/plugin marketplace update shark-skills` and start a new session.
 
-## 6. Output style
+</details>
 
-The output style (a system-prompt addition that sets the voice of the main session) is ASD-STE100. Set it for one
-session with `/output-style shark:asd-ste100`. Set it for a repository with the `outputStyle` key of section 5.
-The agents and the skills write their reports in ASD-STE100 also when the main session has another style.
+### 2. Run `/shark:init`
 
-## 7. Debugger MCP server
+You only need to configure it once per project. In your repo, run:
 
-`shark:code-debugger` and `/shark:debug-rca` use the `mcp-debugger` server (an MCP server that drives real
-step-through debuggers for Python, JS/TS, Go, Rust, Java, .NET and other languages).
+```text
+/shark:init
+```
 
-- It needs Node.js with `npx` on the `PATH`. `.mcp.json` starts a pinned version with `npx -y`.
-- Claude Code starts the server when the plugin is on. If Claude Code asks you to approve the server, approve it
-  one time.
-- In a plugin, the tool names start with `mcp__plugin_shark_mcp-debugger__`. The skills name the tools by
-  function ("set a breakpoint"), not by ID.
-- The server writes its log to `.claude/mcp-debugger.log` in the project folder. Add it to `.gitignore`.
+It will:
 
-## 8. The `.agents/` mirror
+- Find your `AGENTS.md` or `CLAUDE.md`, or create an `AGENTS.md` if you have neither
+- Add the sections **shark** needs (commands, invariants, architecture rules, test scope, secrets, docs layout,
+  owner rules and session harness) and the working rules, without touching what you already have
+- Notice if you already run your own orchestrator, and ask which one leads, so your file never gets two start rules
+- Ask for each value it can't find, with a suggested value for each
 
-Claude Code does not read `.agents/`. The folder holds links to `agents/` and `skills/` for other tools that read
-agent and skill files from `.agents/`. Edit the files in `agents/` and `skills/` only; the links follow.
+The skills never hardcode a command. They run a key from your `Commands` table, so the same kit works on Python,
+JS/TS, Go, or anything with a test command.
 
-## 9. Adopt the kit in a project
+<details>
+<summary>Example</summary>
 
-1. Install or enable the plugin (section 3 or section 5).
-2. Copy the `AGENTS.md` of the kit root to the root of the repository.
-3. Fill each project section: `## Commands`, `## Invariants`, `## Architecture rules`, `## Test scope`,
-   `## Secrets`, `## Docs layout`, `## Owner rules`.
-4. Keep the section names exactly. The skills find the project values by these names.
-5. If the repository has a `CLAUDE.md`, merge the sections into that `CLAUDE.md`, or keep `AGENTS.md` and turn on
-   the `claude-md-and-agents-md` setting. Claude Code reads `AGENTS.md` only when there is no `CLAUDE.md`, or with
-   that setting.
-6. Add a hook that denies access to the secret files of `## Secrets`. The kit does not install one.
-7. Start a session and invoke `/shark:operator`.
-
-## 10. Conventions for a new skill or agent
-
-### 10.1 Files
-
-| Part | Path | Frontmatter |
+```markdown
+| Key | Command | Limit or note |
 | --- | --- | --- |
-| Skill | `skills/<name>/SKILL.md`, with `scripts/` and `references/` if needed | `name`; `description` (what it does, then "Use when …", at most 1024 characters); `allowed-tools` (optional) |
-| Agent | `agents/<name>.md` | `name`; `description`; `tools`; `model` (`sonnet` for `code-writer`, `opus` for the others) |
+| `gate:fast` | `pnpm lint && pnpm tsc --noEmit && vitest run` | At most 5 min. |
+| `test <paths>` | `vitest run <paths>` | |
+```
 
-Do not put `hooks`, `mcpServers` or `permissionMode` in the frontmatter of an agent. Claude Code ignores them in a
-plugin. An MCP server goes in `.mcp.json`.
+When a skill says "run `gate:fast`", this is the line it runs.
 
-### 10.2 Content rules
+</details>
 
-- **No project values.** No project names, tenant names, people, repository names, paths, URLs, decision IDs or
-  incident dates. A lesson keeps its substance, not its story.
-- **No stack lock-in.** A stack fact is a labelled example for at least two stacks, for example "(Python:
-  `pytest -k`, JS: `vitest run`, Go: `go test ./...`)".
-- **Project values come from `AGENTS.md`.** Write "run the project's `gate:fast` (AGENTS.md › Commands)", never a
-  literal command. If the section is missing, the skill asks the user one time and recommends that the user adds
+> [!TIP]
+> After `/shark:init`, your project file tells Claude to load `/shark:operator` at the start of each session. You
+> don't need to type it every time, and your session becomes a full-fledged engineering team. Already use your own
+> orchestration loop? Keep it in charge, and **shark** stays on call.
+
+<details>
+<summary>Prefer to set it up by hand?</summary>
+
+Copy [`AGENTS.md`](AGENTS.md) to your repo root and fill in the sections at the top. Already have a `CLAUDE.md`?
+Merge the sections into it. Claude Code only reads `AGENTS.md` when there's no `CLAUDE.md`, or when the
+`claude-md-and-agents-md` setting is on.
+
+</details>
+
+### 3. That's it. You're running a team now.
+
+## Why **shark** Exists
+
+Before building **shark**, I built [baseline](https://github.com/friedbotstudio/baseline), but it became too bulky
+for newer and improved coding models. **shark** skills are lean, and they scale in parallel without impacting the
+code quality I yearn for.
+
+**shark** turns your harness into a lean, mean coding machine.
+
+### #1: The Agents Stepped On Each Other
+
+> "Adding manpower to a late software project makes it later."
+>
+> Fred Brooks, _The Mythical Man-Month_
+
+**The Problem**: You run three agents in parallel. It looks three times faster. Then you merge. Two agents changed
+the name of the same function. A third agent made its own version of an event. The merge takes a third of your
+afternoon.
+
+**The Fix**: Write a contract before you split the work. One agent writes the round contract in 5 to 10 minutes.
+The contract gives each shared name one owner file. It lists each writer and each reader of each event. It sets the
+boundaries of each lane. Each lane reads the contract first. When a lane finds a shared item, it stops and reports.
+It does not decide alone.
+
+- [`/shark:operator`](./skills/operator/SKILL.md) does the contract step and writes the briefs.
+- [`shark:code-writer`](./agents/code-writer.md) builds one lane in its own worktree. It writes the test first.
+- [`shark:lead-engineer`](./agents/lead-engineer.md) merges the lanes. It checks each lane against the contract.
+
+### #2: A Refactor Missed Some Business Rules
+
+> "If you don't see the use of it, I certainly won't let you clear it away."
+>
+> G.K. Chesterton, _The Thing_
+
+**The Problem**: Rules hide in small places: a guard clause, a branch in a helper, a check from an old incident. A
+rewrite or a merge removes one of them. All the tests still pass. You find the problem in production.
+
+**The Fix**: Write your invariants one time. Then check each diff against them. Do not remove a rule until you know
+why it is there.
+
+- [`shark:invariant-guard`](./agents/invariant-guard.md) compares a diff with your `## Invariants`. It reports each
+  break with `file:line` evidence. It is read-only, so it cannot change your code.
+- [`/shark:merge-audit`](./skills/merge-audit/SKILL.md) checks each merge against the patch notes. A different
+  agent does the audit, not the agent that did the merge.
+- [`/shark:port-audit`](./skills/port-audit/SKILL.md) finds the rules that a rewrite removed.
+  [`/shark:patch-fanout`](./skills/patch-fanout/SKILL.md) puts them back, in parallel.
+
+<details>
+<summary>Example invariants</summary>
+
+- **Tenant isolation.** Each query on tenant data runs inside a tenant context.
+- **Money.** Money is an integer of minor units with a currency. Never a float.
+- **Idempotency.** A retried request with the same key gives the same result. It makes one change only.
+- **One unit of work.** A write, its event and its job commit in one transaction.
+
+</details>
+
+### #3: Production Is On Fire And You're On The Call
+
+> "Quit thinking and look."
+>
+> David J. Agans, _Debugging: The 9 Indispensable Rules_
+
+**The Problem**: You ask an agent to fix a bug. The agent reads the code and makes a guess. It changes the code at
+the symptom. Two days later, the bug occurs again with a new stack trace.
+
+**The Fix**: Find the cause first. Fix it second. Two different agents do these two tasks.
+
+[`shark:code-debugger`](./agents/code-debugger.md) runs your program in a real step-through debugger (Python,
+JS/TS, Go, Rust, Java, .NET, C/C++). It records the real values. It gives you three items: the root cause, a
+failing regression test, and a fix spec. Then `shark:code-writer` changes the production code.
+
+[`/shark:debug-rca`](./skills/debug-rca/SKILL.md) contains the method. You can also use it yourself.
+
+### #4: One Giant Commit At The End
+
+> "Make the change easy (warning: this may be hard), then make the easy change."
+>
+> Kent Beck
+
+**The Problem**: An agent works for a long time. It changes the structure of the code and adds three behaviours.
+All of it goes into one commit of 4,000 lines. Nobody can review it. You cannot revert one part of it. `git bisect`
+cannot find the bad change.
+
+**The Fix**: Change the structure first, in its own commit. Then change the behaviour, in a different commit.
+
+[`/shark:commit-blocks`](./skills/commit-blocks/SKILL.md) splits the working tree into conventional commits. Each
+commit has one reason. A refactor and a behaviour change never share a commit. A script checks that each commit
+passes the gate. Thus `git bisect` works on your history.
+
+### #5: Hours Spent Finding One Blocker At A Time
+
+> "How does a project get to be a year late? ... One day at a time."
+>
+> Fred Brooks, _The Mythical Man-Month_
+
+**The Problem**: The agent runs the slow end-to-end flow. It finds one failure and fixes it. Then it runs the flow
+again and finds the next failure. Each cycle takes 20 minutes. The estimate grows by hours, and nobody sees it.
+
+**The Fix**: Find all the known defects first, with one static scan. Then fix them in rounds.
+
+- [`/shark:goal-loop`](./skills/goal-loop/SKILL.md) sorts the failing scenarios and writes the contract. It fixes
+  them in lanes, merges one time, and runs the flow again.
+- Each agent has a timebox: 20 minutes for a lane. It gets one grace period of 20% to complete its current step.
+- The costly checks run last, one time each: `gate:full`, integration tests and benchmarks.
+
+> [!TIP]
+> The `Working rules` section of [`AGENTS.md`](AGENTS.md) lists all the rules. Each rule names the failure that it
+> prevents. An example: `pytest` with a folder and a file in that folder collects only the file.
+
+### Summary
+
+AI made writing code cheap, but the engineering is still expensive. With **shark**, you can build production-grade
+systems with confidence: systems that are well written, well documented, and easy to debug when production is on
+fire. That's not vibe coding. That's real engineering. It is my decade of experience building and maintaining
+production-scale systems, distilled into this setup.
+
+## Reference
+
+### Session
+
+- **[/shark:init](./skills/init/SKILL.md)**: Set up a project once. Brings your `AGENTS.md` or `CLAUDE.md` in line
+  with the **shark** template, so every session starts with the operator, or with your own orchestrator if you keep
   it.
-- **Names with the namespace.** Refer to the other parts as `shark:code-writer` (agent) and `shark:commit-blocks`
-  (skill).
-- **Tools by function.** Write "set a breakpoint with the mcp-debugger tools", not a tool ID.
-- **Voice.** Reports and documents in ASD-STE100: outcome first, observed and inferred claims labelled, Markdown
-  files with full paths, never published pages.
-- **Timebox.** Each agent brief states the timebox and the grace rule (`AGENTS.md`, Working rules §2).
+- **[/shark:operator](./skills/operator/SKILL.md)**: Run the session. Sets the mode, writes the briefs, routes the
+  work to agents, and checks what comes back. Loads by itself after `/shark:init`.
+- **[/shark:handoff](./skills/handoff/SKILL.md)**: Record and prune the handoff file, so the next session picks up
+  where this one stopped.
 
-### 10.3 Add the part to the kit
+### Build and merge
 
-1. Write the file in `agents/` or `skills/`.
-2. Add one row to the table of section 2.
-3. Test it with `claude --plugin-dir <kit folder>` in a project that has a filled `AGENTS.md`.
-4. Raise the `version` in `.claude-plugin/plugin.json`.
+**Skills**
+
+- **[/shark:goal-loop](./skills/goal-loop/SKILL.md)**: Fix rounds toward one goal across N failing scenarios:
+  classify, contract, fix in lanes, merge, run again.
+- **[/shark:patch-fanout](./skills/patch-fanout/SKILL.md)**: Port many independent patches in parallel, one agent
+  and one branch each.
+- **[/shark:lead-merge](./skills/lead-merge/SKILL.md)**: Merge patch branches in batches from a queue file.
+- **[/shark:merge-audit](./skills/merge-audit/SKILL.md)**: Review each merge against the patch notes and your
+  invariants.
+- **[/shark:port-audit](./skills/port-audit/SKILL.md)**: Find the rules a rewrite lost, by auditing the commits that
+  deleted them.
+- **[/shark:commit-blocks](./skills/commit-blocks/SKILL.md)**: Split a working tree into conventional commits that
+  each pass the gate.
+
+**Agents**
+
+- **[shark:code-writer](./agents/code-writer.md)**: Turn a spec or a fix spec into production code, test first.
+- **[shark:lead-engineer](./agents/lead-engineer.md)**: Merge parallel lanes, check them against the round
+  contract, and run `gate:fast`.
+
+### Debug and design
+
+**Skills**
+
+- **[/shark:debug-rca](./skills/debug-rca/SKILL.md)**: Step through the running program and write a root-cause
+  analysis from observed values.
+- **[/shark:system-design](./skills/system-design/SKILL.md)**: Check a design: SOLID, typed state, one rule in one
+  place, pinned contracts, evaluation first.
+
+**Agents**
+
+- **[shark:code-debugger](./agents/code-debugger.md)**: Find the root cause in the debugger, then write a failing
+  regression test and a fix spec.
+- **[shark:invariant-guard](./agents/invariant-guard.md)**: Audit a diff against your invariants, read-only, with
+  `file:line` evidence.
+- **[shark:architect](./agents/architect.md)**: Senior read-only review of the architecture, the code and its
+  math. Costly, so save it for big designs.
+
+### Docs and upkeep
+
+**Skills**
+
+- **[/shark:cookbook-writing](./skills/cookbook-writing/SKILL.md)**: The method and reading-level script for
+  tutorial chapters.
+- **[/shark:gitignore](./skills/gitignore/SKILL.md)**: Create or refresh `.gitignore` from gitignore.io without
+  losing your own rules.
+
+**Agents**
+
+- **[shark:doc-writer](./agents/doc-writer.md)**: Write specs, design notes, findings reports and runbooks.
+- **[shark:cookbook-writer](./agents/cookbook-writer.md)**: Write tutorial chapters and check their reading level.
+
+### Also in the box
+
+- **[mcp-debugger](https://github.com/debugmcp/mcp-debugger)**: The MCP server behind `shark:code-debugger`. Real
+  breakpoints, stepping and variable reads for Python, JS/TS, Go, Rust, Java, .NET and C/C++. It writes its log to
+  `.claude/mcp-debugger.log`, so add that to your `.gitignore`.
+- **[shark:asd-ste100](./output-styles/asd-ste100.md)**: An output style in Simplified Technical English. Short
+  sentences, outcome first, observed and inferred claims labelled. Your agents' reports stop rambling.
+- **[AGENTS.md](AGENTS.md)**: The project template, with the working rules. `/shark:init` applies it for you.
+
+## Contributing
+
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. The short version: no project
+values, no stack lock-in, and commands named by their `AGENTS.md` key. Test your change with
+`claude --plugin-dir <kit folder>` in a project that has a filled `AGENTS.md`.
+
+Found a security problem? Follow [SECURITY.md](SECURITY.md), and don't open a public issue.
+
+## License
+
+[MIT](LICENSE). The `AGENTS.md` template and the logo in `assets/` are
+[CC0](https://creativecommons.org/publicdomain/zero/1.0/), so you can copy them with no notice at all.
+
+ASD-STE100 and Simplified Technical English are trademarks of ASD, Brussels. **shark** isn't affiliated with ASD. The
+debugger is [`@debugmcp/mcp-debugger`](https://github.com/debugmcp/mcp-debugger) (MIT). It runs through `npx` and
+isn't bundled.
+
