@@ -1,0 +1,12 @@
+{
+  "name": "shark-skills",
+  "owner": { "name": "shark-skills maintainers" },
+  "description": "Local marketplace of the shark engineering orchestration kit.",
+  "plugins": [
+    {
+      "name": "shark",
+      "source": "./",
+      "description": "General-purpose engineering orchestration kit (agents, skills, debugger MCP, ASD-STE100 output style)."
+    }
+  ]
+}

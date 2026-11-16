@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "mcp-debugger": {
+      "command": "npx",
+      "args": ["-y", "@debugmcp/mcp-debugger@0.24.2", "stdio", "--log-file", ".claude/mcp-debugger.log"],
+      "env": {}
+    }
+  }
+}
