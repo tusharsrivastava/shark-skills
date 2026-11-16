@@ -21,6 +21,7 @@ Read the project `AGENTS.md` (or `CLAUDE.md`) at the repository root. Use these 
 | `## Secrets` | The files that no agent reads, and how the environment loads at runtime. |
 | `## Docs layout` | The paths of the spec, handbook, cookbook, decisions log and handoff file. |
 | `## Owner rules` | Push, long checks, deploy and approvals. |
+| `## Session harness` | Who leads the session. If it names another orchestrator, the operator works on call: it takes the work that the user or that orchestrator gives it, and it does not take over the session. |
 
 If a section is missing, ask the user once, in one message for all missing sections. Give a suggested value for
 each. Suggest that they add the section to `AGENTS.md` (the kit has one to copy: `${CLAUDE_PLUGIN_ROOT}/AGENTS.md`). Use the

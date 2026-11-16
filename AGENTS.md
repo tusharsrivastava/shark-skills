@@ -3,7 +3,7 @@
 ## How to use this file
 
 1. Copy this file to the root of the repository.
-2. Fill each section from `## Commands` to `## Owner rules`. Replace each `<…>` value.
+2. Fill each section from `## Commands` to `## Session harness`. Replace each `<…>` value.
 3. Delete the guidance lines (`>`) and the examples that do not apply to your stack.
 4. Keep the section names exactly as they are. The shark skills find the project values by these names.
 5. Keep "Working rules" as it is. Change a rule only to make it stricter for this project.
@@ -121,6 +121,13 @@ Examples (keep the ones that apply):
 | Deploy | `<who deploys, and the restart order>` |
 | Approvals | `<new permissions, new runtime dependencies, business-rule changes>` |
 
+## Session harness
+
+> The one skill that runs first in each session. Keep exactly one start rule in this file. If the project already
+> has its own orchestrator, name it here and keep `/shark:operator` on call.
+
+Invoke `/shark:operator` first, before the first answer.
+
 ---
 
 ## Working rules
@@ -129,7 +136,8 @@ These rules come from the build of a production system. Each one prevents a fail
 
 ### 1. How a session runs
 
-- **Invoke `/shark:operator` first**, before the first answer. It sets the mode (feature, review, debug).
+- **The session harness runs first**, before the first answer. The `## Session harness` section names it. The
+  default is `/shark:operator`, which sets the mode (feature, review, debug).
 - **The main session is the operator.** It talks with the user, writes briefs and checks results. Long work
   (fixes, gates, merges, reviews) runs in background agents.
 - **`shark:code-writer` writes production code** (the paths in "Architecture rules"). The main session writes
