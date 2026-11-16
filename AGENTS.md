@@ -2,7 +2,8 @@
 
 ## How to use this file
 
-1. Copy this file to the root of the repository.
+1. Copy this file to the root of the repository. Or run `/shark:init`: it does steps 1 to 5 for you, and it keeps
+   the text that your project file has already.
 2. Fill each section from `## Commands` to `## Session harness`. Replace each `<…>` value.
 3. Delete the guidance lines (`>`) and the examples that do not apply to your stack.
 4. Keep the section names exactly as they are. The shark skills find the project values by these names.

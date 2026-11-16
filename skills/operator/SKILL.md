@@ -24,7 +24,8 @@ Read the project `AGENTS.md` (or `CLAUDE.md`) at the repository root. Use these 
 | `## Session harness` | Who leads the session. If it names another orchestrator, the operator works on call: it takes the work that the user or that orchestrator gives it, and it does not take over the session. |
 
 If a section is missing, ask the user once, in one message for all missing sections. Give a suggested value for
-each. Suggest that they add the section to `AGENTS.md` (the kit has one to copy: `${CLAUDE_PLUGIN_ROOT}/AGENTS.md`). Use the
+each. Suggest that they run `/shark:init`, which adds the missing sections to the project file (the template is
+`${CLAUDE_PLUGIN_ROOT}/AGENTS.md`). Use the
 answer for the rest of the session. Do not ask again.
 
 **Defaults** until `## Owner rules` says otherwise:
