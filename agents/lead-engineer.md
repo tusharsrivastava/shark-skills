@@ -101,6 +101,17 @@ needs a file of another group stops at the seam and reports it to the final lead
    script) for damage: stray lines, duplicated blocks, encoding. Fix with the Edit tool.
 7. Correct each docstring that the merge makes wrong. Name the design docs that are now wrong in your report (the
    docs pass updates them).
+8. **Comments.** Do not add comments, and remove the explanation comments that the lanes added in this round.
+   - A documentation comment (the doc comment of a module, a class, a function or a public API) is allowed. It
+     follows the ASD-STE100 documentation format of `shark:code-writer` › Comments: a description sentence (20
+     words or fewer, present tense, active voice), the parameters, the return value, the errors that a caller must
+     handle, and one usage example. It tells how to use the item, not how the item works. Remove the algorithm
+     notes, the history, the notes in brackets and the line-by-line text that a lane put in a doc comment.
+   - An explanation comment (what a line does, why, a note, a TODO) stays only when the human asked for it and the
+     brief quotes that request.
+   - Tool directives (`# noqa`, `# type: ignore[...]`, `eslint-disable`), shebangs and license headers are not
+     comments. Comments that existed before the round stay; correct one that the merge makes wrong.
+   - If AGENTS.md has a different comment rule, AGENTS.md wins.
 
 ## Checks
 

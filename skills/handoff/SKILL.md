@@ -50,7 +50,7 @@ the entry point to it.
 | Recently merged | Merges that the user has not tried by hand yet, one entry for each merge, with its commit range | The user's test round covered it, or 14 days passed: delete; `git log` holds it |
 | Direction | Pointers to the plans and to the stage status in the build plan | A plan is finished: its row says so in one word |
 | Left open on purpose | Decisions parked on purpose, each with the condition that opens it again | Opened again and decided: the answer goes where it acts; delete |
-| Cost time once | Gotchas whose fix is not at the site yet | **Promoted** to where it applies (a comment at the site, a guard or a test, an `AGENTS.md` rule, a handbook pitfall, a skill, or a memory): delete |
+| Cost time once | Gotchas whose fix is not at the site yet | **Promoted** to where it applies (a guard or a test at the site, an `AGENTS.md` rule, a handbook pitfall, a skill, or a memory): delete |
 
 ## Record
 

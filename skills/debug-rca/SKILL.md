@@ -320,7 +320,9 @@ so the debugger does not change during an investigation.
   finish.
 - **One regression test**, in the test file that owns the behaviour. It must fail today, for the reason that the
   RCA gives. Name it as a behaviour sentence, in the style of the tests near it. If the project tags tests with a
-  business-rule ID, tag it. Run it and quote the failure.
+  business-rule ID, tag it. Run it and quote the failure. Write no explanation comments in it: the test name gives
+  the behaviour, and the RCA gives the reason. A test docstring is allowed, in ASD-STE100: one sentence that says
+  what the test proves, with no notes in brackets.
 - **Nothing else.** Do not change production code, migrations, settings or configuration. If you must change code
   to observe the defect, say in the report what you changed and why, and undo it.
 

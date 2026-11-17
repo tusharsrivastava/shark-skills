@@ -82,7 +82,7 @@ Each step has a hard limit. The whole unit has a timebox of 20 minutes, plus one
 
    Then run the project's `setup` in it. If the tests need a database, run the project's `test-db:copy`. Never
    build a test database from zero.
-4. **Test first.** Write a test that pins the production behaviour. Cite the decision ID in a comment. Run it with
+4. **Test first.** Write a test that pins the production behaviour. Cite the decision ID in the test docstring, in one ASD-STE100 sentence with no notes in brackets. Run it with
    the project's `test <file>`. It must fail for the reason that you expect.
 5. **Port.** Put the rule into the current architecture:
    - in the module and the layer that the unit names, or that the current design gives

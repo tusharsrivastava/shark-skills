@@ -60,8 +60,8 @@ Two limits apply:
    your kind of change, if the project has them.
 3. Read the spec sections that the spec names. For a business rule, read its row in the rule catalogue. The spec
    wins over the code. Record a gap that you resolve in the decisions log (AGENTS.md › Docs layout).
-4. Read each file that you will change, and one neighbour of each. Match their idiom, naming and comment density.
-   Your code must look the same as the code around it.
+4. Read each file that you will change, and one neighbour of each. Match their idiom and naming. Your code must
+   look the same as the code around it. For comments, follow › Comments, also when the code around it has more.
 5. Do the design check of `shark:system-design` on your plan.
 
 Run every command through the project's environment, as AGENTS.md › Commands gives it (for example a virtual
@@ -144,6 +144,144 @@ the project for each kind of change:
 - Never log a secret, a token, a password, an environment value, or personal data. A telemetry scrubber is a second
   protection, not the first.
 - A new metrics library or monitoring endpoint is a new dependency: ask the caller first.
+
+## Comments
+
+There are two types of comment. Names, small functions and types give the meaning of the code, not comments. These
+rules apply to production code and to test code. In a test, the test name gives the case: write
+`test_float_input_rounds_half_up`, not a `# float gives 2.67` comment.
+
+| Type | What it is | Rule |
+| --- | --- | --- |
+| Documentation comment | The doc comment of a module, a class, a function or a public API: a Python docstring, JSDoc or TSDoc, a Go doc comment, a Rust `///` comment, Javadoc | Allowed. Write it in the documentation format below. |
+| Explanation comment | Any other comment: what a line does, why a choice was made, a note, a TODO | Not allowed. Write one only when the human asked for it, and the brief quotes that request. |
+
+**Documentation format (ASD-STE100).** A doc comment tells a caller how to use the item. It does not tell how
+the item works. Write these parts, in this order, and nothing more:
+
+| Part | Rule |
+| --- | --- |
+| Description | One sentence that says what the item does for the caller. Present tense, active voice, 20 words or fewer: "Converts a decimal string to integer minor units, rounded half up." |
+| Parameters | One short sentence for each parameter. Give the unit, and an example value when the format is not obvious. Do not repeat the type that the signature gives. |
+| Return value | One short sentence. Give the unit. |
+| Errors | Only the errors that a caller must handle (a Python `Raises:`, a Rust `# Errors` or `# Panics`, a TSDoc `@throws`): one sentence each. Do not list an error that comes only from wrong use of the API. |
+| Example | One short usage example that a caller can copy (a doctest in Python, `# Examples` in Rust, `@example` in TSDoc). Show an edge case that a caller must know as one more example line, not as prose. |
+
+- Do not write how the item works: no algorithm, no line-by-line description, no history, no TODO, no author or
+  license text.
+- **No notes in brackets.** "Rounded half up (away from zero on a tie)" is wrong. Write "Rounded half up." and add
+  an example line that shows the tie.
+- **No wrong-use errors.** Do not list `TypeError` for an argument of the wrong type, or an error for `None` where
+  the signature does not allow `None`. The signature already gives the types.
+- A contract note is allowed only when a caller cannot see it from the signature and an example: a side effect (the
+  item changes an argument, writes a file, or changes global state), a thread-safety guarantee, or the safety
+  conditions of an `unsafe` item. One sentence each.
+- A private helper gets no doc comment, unless its name and signature do not give its purpose. Then write only the
+  description sentence.
+- Use the doc-comment syntax of the language and of the project (for example Google or NumPy sections).
+- Every sentence follows ASD-STE100 (the output style `shark:asd-ste100`): 20 words or fewer, the active voice, the
+  approved words, one idea in each sentence, no semicolons. A parameter line can start with a noun phrase ("The
+  amount in major units, as a decimal string."); each sentence after it is a full sentence.
+
+**Reference samples.** Copy their shape.
+
+Python (Google style):
+
+```python
+def convert_to_cents(amount: str, currency: str) -> int:
+    """Converts a decimal amount to integer minor units of the currency.
+
+    Args:
+        amount: The amount in major units, as a decimal string. Example: "12.345".
+        currency: The ISO 4217 currency code. Example: "USD".
+
+    Returns:
+        The amount in minor units, rounded half up.
+
+    Raises:
+        ValueError: The amount is not a decimal number.
+
+    Example:
+        >>> convert_to_cents("12.345", "USD")
+        1235
+        >>> convert_to_cents("500", "JPY")
+        500
+    """
+```
+
+TypeScript (TSDoc). `@remarks` holds the one contract note, a side effect:
+
+````ts
+/**
+ * Sends the invoice to the customer by email.
+ *
+ * @param invoiceId - The ID of the invoice to send.
+ * @param options - The delivery options. Set `copyTo` to send a copy to a second address.
+ * @returns The ID of the email message.
+ * @throws {@link InvoiceNotFoundError} The invoice does not exist.
+ *
+ * @remarks The function writes one row to the `email_log` table.
+ *
+ * @example
+ * ```ts
+ * const messageId = await sendInvoice("inv_123", { copyTo: "billing@example.com" });
+ * ```
+ */
+````
+
+Go. The comment starts with the name. The example is an `ExampleParseRetryPolicy` function in a `_test.go` file:
+
+```go
+// ParseRetryPolicy converts a policy text, such as "3x200ms", to a RetryPolicy.
+// The text gives the number of attempts and the wait between two attempts.
+// It returns an error if the text does not have this format.
+func ParseRetryPolicy(text string) (RetryPolicy, error)
+```
+
+Rust:
+
+````rust
+/// Converts a decimal amount to integer minor units of the currency.
+///
+/// `amount` is the amount in major units, for example `"12.345"`.
+/// `currency` is the ISO 4217 currency code, for example `"USD"`.
+///
+/// # Errors
+///
+/// Returns [`AmountError::Malformed`] if `amount` is not a decimal number.
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(to_minor_units("12.345", "USD").unwrap(), 1235);
+/// assert_eq!(to_minor_units("500", "JPY").unwrap(), 500);
+/// ```
+pub fn to_minor_units(amount: &str, currency: &str) -> Result<i64, AmountError>
+````
+
+Not this. Each marked line breaks a rule:
+
+```python
+def convert_to_cents(amount, currency):
+    """This function basically handles the conversion of amounts.   # vague, filler, says nothing
+
+    It strips the string, matches a regex, then calls Decimal.scaleb # how it works, not how to use it
+    and quantize; added in v2 by the payments team.                  # history, author
+    Ties are rounded away from zero, so -12.345 gives -1235.         # an edge case as prose: put it in the example
+
+    Returns:
+        The amount in cents (rounded half up, away from zero).       # a note in brackets
+
+    Raises:
+        TypeError: if amount isn't a str                             # wrong use of the API, not a caller error
+    """
+```
+
+- The reason for a choice that is not obvious goes in your report or in the commit message, not in the code.
+- These are not comments, and you can write them: a directive that a tool reads (`# noqa`, `# type: ignore[...]`,
+  `// eslint-disable-next-line ...`, a shebang) and a license header that the project needs.
+- Do not delete a comment that exists. If your change makes a comment wrong, correct it.
+- If AGENTS.md has a different comment rule, AGENTS.md wins.
 
 ## Documents
 
