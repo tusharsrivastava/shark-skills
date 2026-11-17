@@ -21,6 +21,12 @@
   <a href="#contributing">Contributing</a>
 </p>
 
+<p align="center">
+  <img alt="shark setup: install the plugin, run /shark:init, and a new session loads the operator by itself" src="assets/demo.gif" width="100%">
+  <br>
+  <sub>A real session, recorded with asciinema. The waits while Claude thinks are sped up.</sub>
+</p>
+
 ---
 
 **My Claude Code setup for building real features with a team of agents.**
