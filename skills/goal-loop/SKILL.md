@@ -120,7 +120,8 @@ defect that fits none of the five goes to the owner as a question.
 2. **Lanes.** One cause or one behaviour for each lane. No two lanes on one file or function. Each lane row gives
    the files and functions that it owns, its starting test, and what it must keep. It also gives the snapshot
    differences that it may cause. Start the lanes with the lane header (`references/lane-header-template.md`).
-   Timebox 20 to 25 minutes, hard, with the automatic grace of 20 % and the rule to ask the operator for more.
+   Timebox 20 minutes for a lane (AGENTS.md › Working rules §2), hard, with the automatic grace of 20 % and the
+   rule to ask the operator for more.
    A lane never runs the `bench` command: it checks only its files (`gate:scoped <paths>`).
 3. **Merge.** One lead merges the round (`shark:lead-engineer` agent; for many branches, the `shark:lead-merge`
    skill). It runs the fast path (`gate:fast`) once and writes one blocker table.
