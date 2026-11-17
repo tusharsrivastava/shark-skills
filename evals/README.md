@@ -8,7 +8,8 @@ workspace, runs one prompt, and grades the reply, the transcript and the files.
 
 ```bash
 evals/docker/run.sh --tag local --tag bash --runs 1 --allow-tools Bash Edit Write   # the cases that the attestation needs
-evals/docker/run.sh --tag slow --runs 1 --allow-real-servers --allow-tools Bash Edit Write 'mcp__*'   # the real debugger
+evals/docker/run.sh --tag local --tag bash --tag slow --runs 1 --allow-real-servers \
+  --allow-tools Bash Edit Write mcp__plugin_shark_mcp-debugger                         # all cases, with the real debugger
 evals/run.sh --tag local --runs 1 --allow-tools Write Edit   # without Docker: the cases that need no Bash
 ```
 
@@ -31,7 +32,8 @@ Never put the token in a file in this repository: `run.sh` copies the repository
 CI does not run the evals: they need a Claude credential. You run them on your machine, and you commit an attestation
 that ties the result to the files that the evals tested.
 
-1. Run the evals: `evals/docker/run.sh --tag local --tag bash --runs 1 --allow-tools Bash Edit Write`. `run.sh` records the fingerprint of
+1. Run the evals: `evals/docker/run.sh --tag local --tag bash --runs 1 --allow-tools Bash Edit Write`. Add the `slow`
+   command options to include the debugger case. `run.sh` records the fingerprint of
    the files when the run starts.
 2. Record the result: `node evals/attest.mjs write evals/results/<time>/result.json`. This writes
    `evals/attestation.json`. It refuses when the files changed after the run started.
@@ -56,7 +58,7 @@ Review a change to `evals/attestation.json` like any other change.
 | --- | --- | --- |
 | `local` | `style-short-answer`, `style-safe-delete`, `writer-doc-comments`, `secrets-hook-read` | Read, Write and Edit only |
 | `bash` | `fix-no-comments`, `init-*`, `secrets-hook-bash` | The Bash sandbox. It does not start on a machine whose credential folders (for example `~/.kube`) hold a symbolic link: use `evals/docker/run.sh`. |
-| `slow` | `debugger-rca` | The real mcp-debugger server and `debugpy` |
+| `slow` | `debugger-rca` | The real mcp-debugger server and `debugpy`. The Docker image installs both. Grant the server by name (`mcp__plugin_shark_mcp-debugger`): the runner refuses `mcp__*`. |
 
 ## Why run.sh copies the plugin
 

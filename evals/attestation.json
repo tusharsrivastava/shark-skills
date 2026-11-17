@@ -1,12 +1,22 @@
 {
-  "fingerprint": "sha256:3601c39abb65ef76dbf0213ad0cb3bec611e17dbc2d3d7d4a12fc0fe60ee42a2",
+  "fingerprint": "sha256:80ad225d783393cc4134a5480cd1b365179e46a9a882d78e9c0a85057c79b2ea",
   "files": 135,
-  "ranAt": "2026-11-17T13:51:40.475Z",
+  "ranAt": "2026-11-17T14:05:27.149Z",
   "claudeVersion": "2.1.326",
-  "costUsd": 1.19,
-  "casesPassed": 8,
-  "casesTotal": 8,
+  "costUsd": 1.89,
+  "casesPassed": 9,
+  "casesTotal": 9,
   "cases": [
+    {
+      "name": "debugger-rca",
+      "tags": [
+        "slow",
+        "debugger"
+      ],
+      "runs": 1,
+      "score": 1,
+      "passed": true
+    },
     {
       "name": "fix-no-comments",
       "tags": [
