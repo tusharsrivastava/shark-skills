@@ -113,6 +113,29 @@ describe("Bash", () => {
   for (const command of allowed) test(`allows: ${command}`, () => assert.equal(call(dir, "Bash", { command }), null));
 });
 
+describe("debugger tools", () => {
+  const dir = project({ "AGENTS.md": AGENTS });
+  const tools = ["mcp__plugin_shark_mcp-debugger__evaluate_expression", "mcp__mcp-debugger__evaluate_expression"];
+
+  for (const tool of tools) {
+    test(`${tool} that opens .env is blocked`, () => {
+      assert.equal(call(dir, tool, { sessionId: "s1", expression: "open('.env').read()" }).pattern, ".env");
+    });
+  }
+
+  test("a source view of a secret file is blocked", () => {
+    assert.ok(call(dir, "mcp__plugin_shark_mcp-debugger__get_source_context", { sessionId: "s1", file: "/srv/app/.env.production", line: 1 }));
+  });
+
+  test("an ordinary expression is allowed", () => {
+    assert.equal(call(dir, "mcp__plugin_shark_mcp-debugger__evaluate_expression", { sessionId: "s1", expression: "invoice.total()" }), null);
+  });
+
+  test("a breakpoint in source code is allowed", () => {
+    assert.equal(call(dir, "mcp__mcp-debugger__set_breakpoint", { sessionId: "s1", file: "src/billing/invoice.py", line: 26 }), null);
+  });
+});
+
 describe("hook process", () => {
   const dir = project({ "AGENTS.md": AGENTS });
   const run = (input) => spawnSync("node", [HOOK], { input: JSON.stringify(input), env: { ...process.env, CLAUDE_PROJECT_DIR: dir }, encoding: "utf8" });

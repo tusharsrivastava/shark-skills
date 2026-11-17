@@ -6,6 +6,7 @@ const DEFAULT_SECRETS = [".env", ".env.*", "secrets/**", "*.pem", "*.key"];
 const DEFAULT_EXCEPTIONS = [];
 const EXAMPLE_FILES = ["*.example", "*.sample", "*.template"];
 const PROJECT_FILES = ["CLAUDE.md", "AGENTS.md"];
+const DEBUGGER_TOOL = /^mcp__.*mcp-debugger.*__/;
 const FILE_TOOLS = { Read: "file_path", Edit: "file_path", MultiEdit: "file_path", Write: "file_path", NotebookEdit: "notebook_path" };
 
 export function globToRegExp(glob) {
@@ -72,6 +73,13 @@ function toRelative(path, cwd, projectDir) {
   return rel.startsWith("..") ? abs.replace(/^\/+/, "") : rel;
 }
 
+function stringsIn(value) {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap(stringsIn);
+  if (value && typeof value === "object") return Object.values(value).flatMap(stringsIn);
+  return [];
+}
+
 function sampleOf(pattern) {
   return pattern.replace(/\*\*/g, "x").replace(/[*?]/g, "x");
 }
@@ -117,6 +125,13 @@ export function decide(input, projectDir) {
     for (const path of [args.path, args.glob].filter(Boolean)) {
       const hit = secretFor(toRelative(path, cwd, projectDir), policy);
       if (hit) return { tool, path, pattern: hit, source: policy.source };
+    }
+    return null;
+  }
+  if (DEBUGGER_TOOL.test(tool)) {
+    for (const text of stringsIn(args)) {
+      const hit = checkBash(text, cwd, projectDir, policy);
+      if (hit) return { tool, ...hit, source: policy.source };
     }
     return null;
   }

@@ -11,6 +11,16 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "mcp__.*mcp-debugger.*__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/deny-secrets.mjs\"",
+            "timeout": 10
+          }
+        ]
       }
     ]
   }
