@@ -1,4 +1,5 @@
 ---
+runs: 1
 tags: ["slow", "debugger"]
 max_turns: 40
 timeout_seconds: 1200

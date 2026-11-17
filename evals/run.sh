@@ -2,7 +2,7 @@
 # Runs the shark eval suite.
 #
 #   evals/run.sh [claude plugin eval options...]
-#   evals/run.sh --tag local --runs 1          # the cases that need no Bash
+#   evals/run.sh --tag local --allow-tools Write Edit   # the cases that need no Bash
 #   evals/run.sh --tag bash --allow-tools Bash Edit Write
 #
 # The eval runner ignores the project and user settings, so a case cannot select the output style. This script

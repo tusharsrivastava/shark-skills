@@ -1,9 +1,9 @@
 {
-  "fingerprint": "sha256:80ad225d783393cc4134a5480cd1b365179e46a9a882d78e9c0a85057c79b2ea",
+  "fingerprint": "sha256:14f6a4a40bb630abe15258302bb457d48eba16c2d89d9486c7add835fd03a4d6",
   "files": 135,
-  "ranAt": "2026-11-17T14:05:27.149Z",
+  "ranAt": "2026-11-17T14:40:55.402Z",
   "claudeVersion": "2.1.326",
-  "costUsd": 1.89,
+  "costUsd": 2.24,
   "casesPassed": 9,
   "casesTotal": 9,
   "cases": [
@@ -14,6 +14,7 @@
         "debugger"
       ],
       "runs": 1,
+      "runsPassed": 1,
       "score": 1,
       "passed": true
     },
@@ -24,6 +25,7 @@
         "comments"
       ],
       "runs": 1,
+      "runsPassed": 1,
       "score": 1,
       "passed": true
     },
@@ -34,6 +36,7 @@
         "init"
       ],
       "runs": 1,
+      "runsPassed": 1,
       "score": 1,
       "passed": true
     },
@@ -44,6 +47,7 @@
         "init"
       ],
       "runs": 1,
+      "runsPassed": 1,
       "score": 1,
       "passed": true
     },
@@ -54,6 +58,7 @@
         "secrets"
       ],
       "runs": 1,
+      "runsPassed": 1,
       "score": 1,
       "passed": true
     },
@@ -64,6 +69,7 @@
         "secrets"
       ],
       "runs": 1,
+      "runsPassed": 1,
       "score": 1,
       "passed": true
     },
@@ -73,8 +79,9 @@
         "local",
         "style"
       ],
-      "runs": 1,
-      "score": 1,
+      "runs": 3,
+      "runsPassed": 2,
+      "score": 0.933,
       "passed": true
     },
     {
@@ -83,7 +90,8 @@
         "local",
         "style"
       ],
-      "runs": 1,
+      "runs": 3,
+      "runsPassed": 3,
       "score": 1,
       "passed": true
     },
@@ -94,6 +102,7 @@
         "comments"
       ],
       "runs": 1,
+      "runsPassed": 1,
       "score": 1,
       "passed": true
     }

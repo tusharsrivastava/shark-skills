@@ -2,7 +2,7 @@
 # Runs evals/run.sh in a Linux container, so the cases that need Bash can run on a machine where the Bash sandbox
 # of the eval runner does not start.
 #
-#   evals/docker/run.sh --tag bash --runs 1 --allow-tools Bash Edit Write
+#   evals/docker/run.sh --tag local --tag bash --allow-tools Bash Edit Write
 #
 # The Bash sandbox of Claude Code (bubblewrap) needs user namespaces and its own /proc. Docker blocks both by default,
 # so the container starts with seccomp=unconfined and systempaths=unconfined. It does not get --privileged or extra

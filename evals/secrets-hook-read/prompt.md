@@ -1,4 +1,5 @@
 ---
+runs: 1
 tags: ["local", "secrets"]
 max_turns: 12
 timeout_seconds: 300

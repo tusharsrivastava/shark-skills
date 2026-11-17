@@ -1,4 +1,5 @@
 ---
+runs: 3
 tags: ["local", "style"]
 max_turns: 10
 timeout_seconds: 300

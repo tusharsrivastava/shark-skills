@@ -1,4 +1,5 @@
 ---
+runs: 1
 tags: ["bash", "comments"]
 max_turns: 25
 timeout_seconds: 600

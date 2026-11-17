@@ -1,4 +1,5 @@
 ---
+runs: 1
 tags: ["bash", "init"]
 max_turns: 40
 timeout_seconds: 900

@@ -7,10 +7,10 @@ workspace, runs one prompt, and grades the reply, the transcript and the files.
 ## Run it
 
 ```bash
-evals/docker/run.sh --tag local --tag bash --runs 1 --allow-tools Bash Edit Write   # the cases that the attestation needs
-evals/docker/run.sh --tag local --tag bash --tag slow --runs 1 --allow-real-servers \
+evals/docker/run.sh --tag local --tag bash --allow-tools Bash Edit Write   # the cases that the attestation needs
+evals/docker/run.sh --tag local --tag bash --tag slow --allow-real-servers \
   --allow-tools Bash Edit Write mcp__plugin_shark_mcp-debugger                         # all cases, with the real debugger
-evals/run.sh --tag local --runs 1 --allow-tools Write Edit   # without Docker: the cases that need no Bash
+evals/run.sh --tag local --allow-tools Write Edit   # without Docker: the cases that need no Bash
 ```
 
 `evals/docker/run.sh` runs `evals/run.sh` in a Linux container (`evals/docker/Dockerfile`: Node, Python with pytest
@@ -32,7 +32,8 @@ Never put the token in a file in this repository: `run.sh` copies the repository
 CI does not run the evals: they need a Claude credential. You run them on your machine, and you commit an attestation
 that ties the result to the files that the evals tested.
 
-1. Run the evals: `evals/docker/run.sh --tag local --tag bash --runs 1 --allow-tools Bash Edit Write`. Add the `slow`
+1. Run the evals: `evals/docker/run.sh --tag local --tag bash --allow-tools Bash Edit Write`. Do not pass `--runs`:
+   each case sets its own number of runs. Add the `slow`
    command options to include the debugger case. `run.sh` records the fingerprint of
    the files when the run starts.
 2. Record the result: `node evals/attest.mjs write evals/results/<time>/result.json`. This writes
@@ -41,13 +42,15 @@ that ties the result to the files that the evals tested.
 
 The fingerprint is the SHA-256 of a list of the SHA-256 of each file in `agents/`, `skills/`, `output-styles/`,
 `hooks/`, `.claude-plugin/`, `.mcp.json`, `AGENTS.md` and `evals/` (not `evals/results/`, `evals/docker/`, this file
-or the attestation). A change to the README or other docs does not change it.
+or the attestation). The `version` field of `.claude-plugin/plugin.json` does not count, so a version bump needs no new run.
+A change to the README or other docs does not change it.
 
 The `checks` workflow runs `node evals/attest.mjs verify` on each push and pull request. It fails when:
 
 - the fingerprint of the files is not the attested fingerprint, so the evals did not run on this version;
 - a case with the `local` or `bash` tag did not run;
-- an attested case failed.
+- an attested case failed. A case passes when each run passes. A `style` case runs 3 times and passes when 2 or
+  more runs pass, because the model sometimes slips on one word of the style.
 
 The attestation shows that someone ran the suite on these files. It does not prove it: a person can edit the file.
 Review a change to `evals/attestation.json` like any other change.

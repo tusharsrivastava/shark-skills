@@ -10,6 +10,19 @@ const ATTESTATION = "evals/attestation.json";
 const INPUTS = ["agents", "skills", "output-styles", "hooks", ".claude-plugin", ".mcp.json", "AGENTS.md", "evals"];
 const EXCLUDED = [/^evals\/results\//, /^evals\/attestation\.json$/, /^evals\/README\.md$/, /^evals\/docker\//];
 const REQUIRED_TAGS = ["local", "bash"];
+const RUN_RULES = { style: { minRuns: 3, minPassed: 2 } };
+const DEFAULT_RULE = { minRuns: 1, minPassed: 1 };
+
+export function ruleFor(tags) {
+  const tag = tags.find((t) => RUN_RULES[t]);
+  return tag ? RUN_RULES[tag] : DEFAULT_RULE;
+}
+
+function casePasses(c) {
+  const rule = ruleFor(c.tags);
+  const needed = Math.max(rule.minPassed, c.runs - (rule.minRuns - rule.minPassed));
+  return c.runs >= rule.minRuns && c.runsPassed >= needed;
+}
 
 export function inputFiles(root = ROOT) {
   const listed = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z", "--", ...INPUTS], {
@@ -22,10 +35,17 @@ export function inputFiles(root = ROOT) {
     .sort();
 }
 
+function contentOf(root, file) {
+  const content = readFileSync(join(root, file));
+  if (file !== ".claude-plugin/plugin.json") return content;
+  const { version, ...manifest } = JSON.parse(content.toString("utf8"));
+  return JSON.stringify(manifest);
+}
+
 export function fingerprint(root = ROOT) {
   const files = inputFiles(root);
   const manifest = files
-    .map((file) => `${createHash("sha256").update(readFileSync(join(root, file))).digest("hex")}  ${file}`)
+    .map((file) => `${createHash("sha256").update(contentOf(root, file)).digest("hex")}  ${file}`)
     .join("\n");
   return { sha256: createHash("sha256").update(manifest).digest("hex"), files: files.length };
 }
@@ -52,13 +72,14 @@ function write(resultPath) {
   const tags = caseTags();
   const cases = result.cases.map((c) => {
     const runs = c.arms.with;
-    return {
+    const entry = {
       name: c.name,
       tags: tags[c.name] ?? [],
       runs: runs.length,
+      runsPassed: runs.filter((r) => r.passed).length,
       score: Number(c.aggregates.score.toFixed(3)),
-      passed: runs.every((r) => r.passed),
     };
+    return { ...entry, passed: casePasses(entry) };
   });
   const attestation = {
     fingerprint: `sha256:${now.sha256}`,
@@ -86,9 +107,12 @@ function verify() {
   for (const [name, tags] of Object.entries(caseTags())) {
     if (tags.some((t) => REQUIRED_TAGS.includes(t)) && !attested.has(name)) problems.push(`the case ${name} did not run.`);
   }
-  for (const c of attestation.cases) if (!c.passed) problems.push(`the case ${c.name} failed (score ${c.score}).`);
+  for (const c of attestation.cases) {
+    const rule = ruleFor(c.tags);
+    if (!casePasses(c)) problems.push(`the case ${c.name} failed: ${c.runsPassed} of ${c.runs} runs passed (it needs ${rule.minRuns} or more runs, with at most ${rule.minRuns - rule.minPassed} failed).`);
+  }
   if (problems.length) fail(problems.join("\n  "));
-  const passed = attestation.cases.filter((c) => c.passed).length;
+  const passed = attestation.cases.filter(casePasses).length;
   console.log(`attest: ok. ${passed} of ${attestation.cases.length} cases passed on ${attestation.fingerprint.slice(0, 19)} (${attestation.ranAt}).`);
 }
 

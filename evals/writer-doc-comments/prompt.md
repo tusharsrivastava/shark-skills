@@ -1,4 +1,5 @@
 ---
+runs: 1
 tags: ["local", "comments"]
 max_turns: 30
 timeout_seconds: 900
