@@ -1,0 +1,51 @@
+{
+  "fingerprint": "sha256:4ceb7bfe8d0ee54cb627bc968c7350cc178e3e1e60f866af54b7aa48966e3c74",
+  "files": 136,
+  "ranAt": "2026-11-17T13:24:11.153Z",
+  "claudeVersion": "2.1.326",
+  "costUsd": 0.62,
+  "casesPassed": 4,
+  "casesTotal": 4,
+  "cases": [
+    {
+      "name": "secrets-hook-read",
+      "tags": [
+        "local",
+        "secrets"
+      ],
+      "runs": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "style-safe-delete",
+      "tags": [
+        "local",
+        "style"
+      ],
+      "runs": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "style-short-answer",
+      "tags": [
+        "local",
+        "style"
+      ],
+      "runs": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "writer-doc-comments",
+      "tags": [
+        "local",
+        "comments"
+      ],
+      "runs": 1,
+      "score": 1,
+      "passed": true
+    }
+  ]
+}

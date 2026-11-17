@@ -21,6 +21,7 @@ follow.
 | Output style | `output-styles/asd-ste100.md` |
 | Debugger MCP server | `.mcp.json` |
 | Hooks | `hooks/hooks.json`, with each script and its `*.test.mjs` (run `node --test hooks/*.test.mjs`) |
+| Eval suite | `evals/`. See [evals/README.md](evals/README.md). A pull request that changes a skill, an agent, a hook or the output style runs the evals and commits `evals/attestation.json` (see the eval README). CI checks it. |
 | Project template | `AGENTS.md` |
 | Mirror for other tools | `.agents/agents -> ../agents`, `.agents/skills -> ../skills` (relative symlinks) |
 
