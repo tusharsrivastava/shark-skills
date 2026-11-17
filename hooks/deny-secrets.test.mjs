@@ -127,6 +127,11 @@ describe("debugger tools", () => {
     assert.ok(call(dir, "mcp__plugin_shark_mcp-debugger__get_source_context", { sessionId: "s1", file: "/srv/app/.env.production", line: 1 }));
   });
 
+  test("a test-name regex in debugger arguments is allowed", () => {
+    const args = { sessionId: "s1", scriptPath: "/repo/node_modules/vitest/vitest.mjs", args: ["run", "-t", "shared fields .* should"] };
+    assert.equal(call(dir, "mcp__plugin_shark_mcp-debugger__start_debugging", args), null);
+  });
+
   test("an ordinary expression is allowed", () => {
     assert.equal(call(dir, "mcp__plugin_shark_mcp-debugger__evaluate_expression", { sessionId: "s1", expression: "invoice.total()" }), null);
   });

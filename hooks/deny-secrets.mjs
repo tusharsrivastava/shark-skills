@@ -91,12 +91,12 @@ export function shellTokens(command) {
     .filter((t) => t && !t.startsWith("-") && !t.startsWith("$"));
 }
 
-export function checkBash(command, cwd, projectDir, policy) {
+export function checkBash(command, cwd, projectDir, policy, { wildcards = true } = {}) {
   for (const token of shellTokens(command)) {
     const rel = toRelative(token, cwd, projectDir);
     const hit = secretFor(rel, policy);
     if (hit) return { path: token, pattern: hit };
-    if (/[*?]/.test(token) && basename(token).replace(/[*?]/g, "")) {
+    if (wildcards && /[*?]/.test(token) && basename(token).replace(/[*?]/g, "")) {
       const tokenRegex = globToRegExp(basename(token));
       for (const pattern of policy.secrets) {
         const sample = basename(sampleOf(pattern));
@@ -130,7 +130,7 @@ export function decide(input, projectDir) {
   }
   if (DEBUGGER_TOOL.test(tool)) {
     for (const text of stringsIn(args)) {
-      const hit = checkBash(text, cwd, projectDir, policy);
+      const hit = checkBash(text, cwd, projectDir, policy, { wildcards: false });
       if (hit) return { tool, ...hit, source: policy.source };
     }
     return null;

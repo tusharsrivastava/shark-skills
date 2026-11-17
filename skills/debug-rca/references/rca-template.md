@@ -2,7 +2,8 @@
 
 | Item | Value |
 | --- | --- |
-| Status | investigating / root cause confirmed / fixed |
+| Status | investigating / root causes confirmed (the completeness gate passed) / fixed |
+| Causes | <the number of root causes found> |
 | Severity | What it costs while it is not fixed: wrong money, data of another tenant or customer, lost work, noise |
 
 ## Symptom
@@ -14,6 +15,12 @@ think is wrong: what was seen.
 $ <the project's `test` command> <path to the test file>
 FAILED test_retry_handler::test_message_runs_once - assert 2 == 1
 ```
+
+## Symptom map
+
+| # | Symptom (as reported or found) | Path and data | Cause | Failing test |
+| --- | --- | --- | --- | --- |
+| S1 | <what was seen> | <operation, entity, locale, data> | C1 | `<test name>` |
 
 ## Reproduction
 
@@ -27,9 +34,10 @@ rate. That is a finding, not a caveat.
 | --- | --- | --- | --- | --- |
 | 1 | <X has the wrong value when Y runs, because Z> | `<expression>` at `<file:line>` is `<value>` | `<value>` | confirmed / refuted |
 
-## Root cause
+## Root causes
 
-The specific line, and the design decision behind it. Continue to ask _why_ until the answer is not a mechanism.
+One part for each cause (C1, C2, …). For each: the specific line, and the design decision behind it. Continue to ask
+_why_ until the answer is not a mechanism.
 
 > `claim_message` commits on its own connection, but the handler writes in a different transaction. A crash
 > between the two leaves the message claimed with no effect, and a retry claims it again.
@@ -51,10 +59,22 @@ the order seen. Label each row: observed (read in the debugger, the output, a lo
 Say which prediction confirmed the hypothesis: _"if the claim commits on its own, a second delivery after a
 handler failure claims again"_. It did.
 
-## Blast radius
+## Variant matrix
 
-What else runs through the same path and is therefore also wrong, if anyone noticed or not. A root cause found
-once usually acts in more than one place. List them, or say that you checked and it does not.
+| Axis | Value | Cause | Test, or "not applicable" and why |
+| --- | --- | --- | --- |
+| Twin path | global | C1 | `<test name>` |
+
+## Twins and history
+
+What you searched for (the faulty expression, the helper, the parallel operation), with the command, and what you
+found. A root cause found once usually acts in more than one place.
+
+## Adjacent rules
+
+| Rule | Source | The obvious fix that breaks it | Guard test (passes now) |
+| --- | --- | --- | --- |
+| <a status change needs status access> | `docs/spec.md` | <draft all locales without the access check> | `<test name>` |
 
 ## Fix spec
 
@@ -62,8 +82,12 @@ The input of `shark:code-writer`. Write behaviour, not a patch.
 
 - **After the fix:** <what must be true, as behaviour>.
 - **Files:** `<file>` (<why>); `<file>` (<why>).
-- **Regression test:** `<test file>` › `<test name>`. It fails now and must pass after the fix.
-- **Rejected:** <a narrower fix, and why it is not sufficient>. The next person will think of it too.
+- **Causes:** one part for each cause, C1, C2, …, each with the parts below.
+- **Regression tests:** `<test file>` › `<test name>`, one for each cause and variant. They fail now and must pass
+  after the fix.
+- **Guard tests:** `<test file>` › `<test name>`, one for each adjacent rule. They pass now and must still pass.
+- **Rejected:** <the obvious or narrower fix, and the symptom that it leaves or the adjacent rule that it breaks>.
+  The next person will think of it too.
 - **Must not change:** <the callers or the behaviour that depend on the current code>.
 - **Constraints:** <a decision that matters, as a constraint: "the claim and the effect commit in one unit of
   work">.

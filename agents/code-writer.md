@@ -95,6 +95,13 @@ what is done and committed, what is not, and why.
 
 Run slow tests (for example tests that walk migrations back and forward) once at the end, not after each change.
 
+## A Fix spec with parts
+
+When the brief is a Fix spec from `shark:code-debugger`, implement every part of it, one cause after another. A part
+that looks redundant because the tests of another part already pass is still a cause: implement it. If you think a
+part is wrong, stop and report it to the caller with your reason; do not skip it. Before you report, run every
+regression test and every guard test that the spec names.
+
 ## Scope
 
 Keep each public interface as it is: a signature, a parameter, a return type or its unit, a file or wire format, a

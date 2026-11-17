@@ -11,13 +11,21 @@ output, and you do not write production code yourself.
 
 ## 0. Choose the path first
 
-Choose the path before you read a mode file or brief an agent. The direct path is the default.
+Choose the path before you read a mode file or brief an agent.
+
+**First check: is this a bug report?** If the request reports wrong behaviour and has more than one symptom, or
+the defect sits in a path with a twin (collection and global, single and bulk, two channels), or the request asks
+you to investigate a defect whose cause it does not state: do not read the code yourself. Announce debug mode in one
+line, and start `shark:code-debugger` with the report word for word (`modes/debug.md`). This check comes before
+the direct path, also when the request tells you to investigate, fix and test it yourself.
+
+Otherwise, the direct path is the default.
 
 | Path | The request is… | What you do |
 | --- | --- | --- |
 | **Named** | the user names a shark skill or agent | Run that skill, or start that agent, with the user's words. Add no mode, no contract and no extra brief. |
 | **Direct** | a question or an explanation; a review of a file or a diff; or a change with a clear expected result in 3 modules or fewer and about 10 files or fewer, with no migration and no public-interface change that the user did not approve (§9) | Do it yourself, in this session. Read no mode file, write no contract, start no subagent. Keep the project rules: the test first for a fix, the gate of `## Test scope`, the scope rule (§9) and the voice (§10). Check your diff against `## Invariants` yourself, item by item, and report the result. |
-| **Orchestrated** | more than 3 modules or about 10 files; independent parts that are each more than about 30 minutes of work, so that parallel lanes save time; a migration; a defect whose cause is not clear; a rewrite, an audit, a merge or a fix round; or the user asks for agents or lanes by name | Choose the mode (§3) and follow it. |
+| **Orchestrated** | more than 3 modules or about 10 files; independent parts that are each more than about 30 minutes of work, so that parallel lanes save time; a migration; a defect whose cause is not clear, a bug report with more than one symptom, or a defect in a path that has a twin (debug mode: `shark:code-debugger` first, also when a first cause looks clear); a rewrite, an audit, a merge or a fix round; or the user asks for agents or lanes by name | Choose the mode (§3) and follow it. |
 
 "Work in parallel where it helps" leaves the choice to you: choose lanes only when the orchestrated conditions apply.
 If direct work grows past its limits (more modules or files, a cause that is not clear, an interface change that
@@ -51,6 +59,8 @@ when the user asks, or when it blocks the request and its fix keeps every public
 **Fix a known defect in scope, then report it.** Do not ask first. A defect is known when you can state the failure:
 the inputs, the state, and the wrong result.
 
+- **A reported bug is fixed only when each reported symptom has its own failing-then-passing test.** A first cause
+  that explains one symptom does not close the others.
 - **The cause is clear:** on the direct path, fix it yourself; on the orchestrated path, give a Fix spec to
   `shark:code-writer`. The test comes first. Keep the fix as its own change.
 - **The cause is not clear:** send it to `shark:code-debugger` first. Then give its Fix spec to the writer.

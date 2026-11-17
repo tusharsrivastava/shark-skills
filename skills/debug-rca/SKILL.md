@@ -11,8 +11,8 @@ story that sounds like an explanation but contains no observation.
 
 The method below makes the difference. The tools are the easy part.
 
-This skill is the method of the `shark:code-debugger` agent. The agent finds the root cause, pins it with one
-failing test, and returns a Fix spec. The `shark:code-writer` agent then makes the fix. The two jobs stay
+This skill is the method of the `shark:code-debugger` agent. The agent finds every cause of the reported
+behaviour, pins each one with a failing test, guards the rules that the fix must keep, and returns a Fix spec. The `shark:code-writer` agent then makes the fix. The two jobs stay
 separate, so that the fix rests on a diagnosis that another person can read.
 
 ## Project values
@@ -28,6 +28,52 @@ Read the project's `AGENTS.md` (or `CLAUDE.md`) first. This skill uses these sec
 | `## Secrets` | The files that you never read; how the environment is loaded at runtime |
 
 If a section is missing, ask the user once. Suggest adding it to `AGENTS.md`.
+
+## Completeness: one cause is not the end
+
+A real defect often has more than one cause, and the obvious fix often breaks a rule next to it. An investigation
+that stops at the first confirmed cause fixes one symptom, misses the others, and ships a regression. These five
+steps prevent that. They frame the whole investigation; the debugger loop below confirms each cause inside them.
+
+1. **Symptom map, before any hypothesis.** Write each reported symptom as its own row: what was seen, in which
+   path, with which data. Do not merge two symptoms into one row because they "probably" have one cause; only an
+   observation can merge them. Each row ends with a confirmed cause and a failing test, or with "not reproduced"
+   and the reason.
+2. **Assume more than one cause.** A report with several symptoms, or a defect in a path that has a twin, usually
+   has more than one cause. A first confirmed cause is a finding, not the end. After each confirmed cause, go back to
+   the symptom map and ask which rows it does not explain.
+3. **Variant matrix.** For the path of each cause, list the variants that can take a different branch, and test
+   each one that applies. Mark each cell: tested (with the test name), or not applicable (with the reason).
+   - **Each cell runs with the defect's state in place.** To test "unpublish" for a draft defect, make the pending
+     draft first, then unpublish. An existing test that passes without that state does not cover the cell: write
+     the cell's own test.
+   - **Two cells are never "not applicable" without a search:** the "all" scope (all locales, all tenants, bulk
+     operations, `locale: 'all'`), and the denied actor. Search the code for access rules on the data and the
+     operations that the fix touches (field access, collection access, role checks). If a rule exists, the denied
+     actor is a cell, and its test is a guard.
+
+   | Axis | Values to check |
+   | --- | --- |
+   | Twin paths | collection and global, list and search, single and bulk, sync and async, web and POS, create and update |
+   | Operation | create, update, draft save, publish, unpublish, delete, read after write, read in another scope |
+   | Value shape | set, change, clear (`null`, empty list, empty string, `0`, `false`), nested child of an array or a block |
+   | Scope | one locale, tenant or key, and all of them; another locale, tenant or key |
+   | Actor | allowed, and denied by role, access rule or field access |
+   | Time and order | sequential, concurrent, retry after a failure, after a restart or a cache fill, time zones and DST |
+   | Identity | case, whitespace and aliases of keys; currency and unit exponents |
+
+4. **Find the twins.** Search for the same pattern in other places: the same helper, the same check copied into
+   another module, the parallel operation (`grep` for the faulty expression and for the callers of the faulty
+   function). Read the history of the faulty lines (`git log -S '<expression>'`, `git log -L`): an old fix of the
+   same kind in one twin often shows the other twin that did not get it.
+5. **Adjacent rules.** Before the Fix spec, collect the rules that the obvious fix could break: `## Invariants`, the
+   spec and docs of the area, access control, the callers of the code that will change, and the tests near it. For
+   each rule that the fix touches, write a guard test that passes now and must still pass after the fix. Name the
+   obvious fix that would break it in the Fix spec, as "Rejected".
+
+**The completeness gate.** The investigation ends only when each symptom row has a confirmed cause and a failing
+test, each applicable matrix cell has a test, the twin search is done, and each adjacent rule has a guard test.
+Until then, the RCA status stays "investigating", also when one cause is confirmed.
 
 ## Before you start the debugger
 
@@ -115,11 +161,13 @@ before it wastes a session.
 - **Prefer evaluate to stepping.** One expression often answers what fifty steps answer.
 - **Do not step through library or framework code** unless the evidence points there. It usually does not. Turn
   on "just my code" where the adapter has it.
-- **Stop when the observation confirms the hypothesis.** If you continue to explore after the answer, a clear
-  finding becomes unclear.
-- **Read the code to make the hypothesis: that is the method, not a shortcut.** The debugger adds the Evidence:
-  observed values that confirm a prediction. A cause that you found by reading and did not observe is only a
-  hypothesis.
+- **Stop a hypothesis when an observation confirms it.** Then go back to the symptom map and the variant matrix
+  for the next row that has no cause. Stop the investigation only at the completeness gate.
+- **Read the code to make the hypothesis: that is the method, not a shortcut.** Then observe the value that
+  confirms it, with the cheapest instrument that shows it: a failing test with a precise assertion, a probe script
+  that prints the value, or the debugger. Use the debugger when the value is deep in a call chain, depends on
+  concurrency or order, or when a probe would change the behaviour. A cause that you found by reading and did not
+  observe is only a hypothesis.
 
 ## Observed and inferred
 
@@ -145,84 +193,23 @@ The general recipe, for each language:
 5. Set the environment that the project's `test` command sets (a settings module, a test flag). Never copy a
    secret value into a launch configuration: the project loads secrets at runtime (`## Secrets`).
 
-### Python (debugpy)
+6. **Reach the code that runs the test.** If the runner runs tests in worker processes or threads, a launched
+   session can stay in the main process, and its breakpoints stay "Unbound". Then start the runner yourself with its
+   own inspector or listener option, and attach the session to that port.
+7. **Check what you attached to.** The first output line shows the interpreter that runs. A session can ignore
+   `executablePath` and use the interpreter on the `PATH`.
+8. **A breakpoint that stays unbound after its module loads is a finding, not a dead end.** A runner that
+   transforms modules can hide the source from the adapter. Change the instrument: a probe test with a precise
+   assertion that prints the value, or a temporary log line that you delete before you finish. The value is still
+   observed.
 
-Status: observed in several sessions with pytest.
+The recipe for each language, with what earlier sessions observed:
 
-```jsonc
-// create a debug session
-{ "language": "python", "executablePath": "<abs>/<venv>/bin/python" }
-
-// start the program
-{
-  "language": "python",
-  "scriptPath": "<abs>/<venv>/bin/pytest",           // the pytest entry script, NOT the python binary
-  "args": ["<test id>", "-p", "no:cacheprovider", "-x", "-q", "-s"],
-  "adapterLaunchConfig": {
-    "python": "<abs>/<venv>/bin/python",
-    "cwd": "<abs repository root>",
-    "env": { "<SETTINGS_VARIABLE>": "<test settings>" },
-    "justMyCode": true
-  }
-}
-```
-
-- A pytest test ID has the form `<path>/test_file.py::test_name`.
-- **Give the interpreter as `executablePath`** when you create the session. `adapterLaunchConfig.python` alone
-  is not sufficient: the start then fails with "debugpy not installed for <system python>". `executablePath`
-  overrides `adapterLaunchConfig.python`. To change the interpreter, close the session and create a new one.
-- **`scriptPath` is a source file.** The interpreter binary with `args: ["-m", "pytest", …]` fails at once with
-  `SyntaxError: source code string cannot contain null bytes`. The start then returns `"state": "stopped"`, and
-  the next call says "Session is terminated". Only the output shows the cause. A driver script that calls
-  `pytest.main([...])` also works as `scriptPath`.
-- First check: `<venv>/bin/python -c "import debugpy"`. If the import fails, install `debugpy` into a local
-  environment only (for example a worktree environment), never into the lock file.
-- `-p no:cacheprovider` keeps pytest from writing its cache during the run. Turn off `pytest-xdist` workers
-  (`-p no:xdist` or `-n 0`): a worker is a second process, and it can build a new test database.
-- If the default options of the project leave out a test marker (for example integration tests), add the marker
-  to `args` (`-m integration`). Else pytest deselects the test and the session ends at once.
-- Wrap an expression in `repr(...)` to see nested values: the evaluate tool shows nested tuples as `(...)`. Ask
-  for names directly: `locals()` mixes in the module globals.
-- A `logMessage` does not accept `!r`: `{x!r}` prints only "invalid syntax". Write `{repr(x)}`.
-- A breakpoint on a line with a generator expression can stop next in the `<genexpr>` frame, where the locals of
-  the function are not visible. Put the breakpoint on the line before it, or use a logpoint.
-
-### JavaScript and TypeScript (Node, js-debug)
-
-Status: inferred from the server documentation. No session of this kit has verified this recipe yet. Record what
-you observe in your report, so that this section can be corrected.
-
-```jsonc
-// create a debug session
-{ "language": "javascript", "executablePath": "<abs>/<node binary of the project>" }
-
-// start the program: the runner's JS entry file, not a shell wrapper in node_modules/.bin
-{
-  "language": "javascript",
-  "scriptPath": "<abs>/node_modules/<runner>/<entry>.mjs",
-  "args": ["<runner subcommand>", "<test file>", "-t", "<test name>"],
-  "adapterLaunchConfig": { "cwd": "<abs repository root>", "env": { "NODE_ENV": "test" } }
-}
-```
-
-- **Run one process.** Turn off the workers of the runner (Jest: `--runInBand`; Vitest: `--no-file-parallelism`
-  or a single-fork pool). A test that runs in a worker does not stop at a breakpoint of the main process. To
-  confirm for the runner version of the project.
-- **`scriptPath` is a JavaScript file.** A file in `node_modules/.bin` is often a shell wrapper. Point to the
-  JavaScript entry that the wrapper calls.
-- **TypeScript needs source maps.** A breakpoint on a `.ts` file binds through the source map. If it stays
-  unverified after the module loaded, check the source maps. Set `"sourceMap": true` in `tsconfig.json`, or the
-  source-map option of the loader.
-- A `function` breakpoint takes the dotted runtime path of the function. A function in a module that loads late
-  binds at the next pause.
-- An `async` call chain shows across `await` only when the adapter keeps async stack traces. Put the breakpoint
-  after the `await` that gives the value, not before it.
-
-### Other languages
-
-The server also has adapters for Go, Rust, Ruby, Java, .NET and C/C++. The recipe is the same: the project
-interpreter or the debug build, one test, one process. Logpoints do not work in Java and .NET. Ruby does not stop
-on uncaught exceptions by default.
+| Language | Recipe |
+| --- | --- |
+| Python (debugpy) | [`references/launch-python.md`](references/launch-python.md) |
+| JavaScript and TypeScript (Node, js-debug) | [`references/launch-javascript.md`](references/launch-javascript.md) |
+| Other languages | [`references/launch-other.md`](references/launch-other.md) |
 
 ## Attach to a running process
 
@@ -318,9 +305,12 @@ so the debugger does not change during an investigation.
 
 - **Temporary probes:** a driver script or a probe test. Keep each probe untracked, and delete it before you
   finish.
-- **One regression test**, in the test file that owns the behaviour. It must fail today, for the reason that the
-  RCA gives. Name it as a behaviour sentence, in the style of the tests near it. If the project tags tests with a
-  business-rule ID, tag it. Run it and quote the failure. Write no explanation comments in it: the test name gives
+- **Regression tests:** one failing test for each confirmed cause and for each applicable cell of the variant
+  matrix, in the test file that owns the behaviour. Each fails today, for the reason that the RCA gives.
+- **Guard tests:** one test for each adjacent rule that the fix could break. Each passes today and must still pass
+  after the fix.
+- For each test: name it as a behaviour sentence, in the style of the tests near it. If the project tags tests with
+  a business-rule ID, tag it. Run it and quote the result. Write no explanation comments in it: the test name gives
   the behaviour, and the RCA gives the reason. A test docstring is allowed, in ASD-STE100: one sentence that says
   what the test proves, with no notes in brackets.
 - **Nothing else.** Do not change production code, migrations, settings or configuration. If you must change code
@@ -335,13 +325,14 @@ skill, never with a fixed path. Write it as a Markdown file, and give its full p
 The section that gives the document its value is **Evidence**: actual observed values at named locations. An RCA
 without observed values is a hypothesis with formatting, and the next person cannot tell the difference.
 
-The **Fix spec** section is the input of `shark:code-writer`. Write it as a spec, not as a patch:
+The **Fix spec** section is the input of `shark:code-writer`. Write it as a spec, not as a patch, with one part for
+each cause:
 
 - what must be true after the fix, as behaviour;
 - the files that are involved, and why;
-- the regression test, by name, which must pass after the fix;
-- a narrower fix that you rejected, and why;
-- what the fix must not change: the callers that depend on the current behaviour.
+- the regression tests, by name, which must pass after the fix, and the guard tests, which must keep passing;
+- the obvious or narrower fix that you rejected, and the symptom it leaves or the adjacent rule it breaks;
+- what the fix must not change: the callers and the adjacent rules that depend on the current behaviour.
 
 Leave the implementation decisions to the writer. If you saw a decision that matters, state the constraint that
 decides it, not the line to type.
@@ -349,20 +340,25 @@ decides it, not the line to type.
 End with **Prevention**: the test that catches this defect, and what catches the whole class of defect. A root
 cause analysis that does not end in a test is an essay.
 
-## Finish
+## Finish (after the completeness gate)
 
 1. Close every debug session.
 2. Make sure that no debuggee that you started still runs (for example `pgrep -fl debugpy`, `pgrep -fl inspect`).
-3. Delete the probes. `git status` shows only the regression test.
+3. Delete the probes. `git status` shows only the regression and guard tests.
 4. Run the project's `typecheck` with no paths, so that it uses the project configuration. A type checker on
    single files can give false import errors.
 
 ## Report (outcome first, ASD-STE100)
 
-- The root cause and the proximate cause, each with `file:line`.
+- Each root cause and its proximate cause, with `file:line`. Say how many causes you found and which symptom each
+  one explains.
+- The symptom map: each symptom, its cause, and its test.
+- The variant matrix: each cell, tested (test name) or not applicable (reason).
+- The twin search: what you searched for, and what you found.
+- The adjacent rules and their guard tests.
 - The hypotheses table: each hypothesis, its prediction, and whether an observation confirmed it.
 - The observed values that make the evidence (labelled observed or inferred).
-- The regression test, and its failure output now.
+- The regression tests and their failure output now; the guard tests and their pass output now.
 - The Fix spec.
 - The full path of the RCA file.
 - Where this skill or the tools gave wrong guidance, exactly, so that the skill can be corrected.
