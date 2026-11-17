@@ -135,9 +135,9 @@ stays on this machine only. Name this in the report.
 Send one message with every value that is still unknown. Use a table: section, item, suggested value, why. Use the
 answer for the rest of the run.
 
-### 7. Add the Working rules block
+### 7. Plan the Working rules block
 
-Check the target with the script:
+Do not write the block in this step. Check the target with the script, and choose the action:
 
 ```bash
 "${CLAUDE_PLUGIN_ROOT:-<directory of this skill>/../..}/skills/init/scripts/working-rules.sh" check <target>
@@ -146,7 +146,7 @@ Check the target with the script:
 | Exit code | Meaning | Action |
 | --- | --- | --- |
 | `0` | The block is the same as the template. | Change nothing. |
-| `3` | The target has no block. | Add the output of `working-rules.sh print` at the end of the target. |
+| `3` | The target has no block. | Add it in step 8 with `working-rules.sh apply <target>`. |
 | `1` | The block differs. | Show `working-rules.sh diff <target>`. A project can make a rule stricter. Ask the user which lines to keep. Never replace the block without a yes. |
 
 If the target already has a `## Working rules` section with no markers, do not add a second one. Show the
@@ -158,9 +158,19 @@ The first Working rule says that the session harness runs first. The `## Session
 
 1. Show the summary: the target file, the sections added, the rows added, the Working rules action, and the
    output style action.
-2. After the user says yes, write the files. Change `.claude/settings.json` with the Edit tool, not with a script,
-   so that its other keys and its format stay the same.
-3. Run `working-rules.sh check <target>` again. Expect exit code `0`, or `1` when the user kept a stricter rule.
+2. After the user says yes, write the files in this order:
+   1. Write the project sections to the target (the Write tool for a new file, the Edit tool for an existing one).
+   2. Then run `working-rules.sh apply <target>`. It adds the block at the end of the target, and it is the last
+      write to the target. Do not write the block yourself, except as in step 3. Do not use the Write tool on the target after
+      `apply`: a Write replaces the whole file and removes the block. If you must change a section after `apply`,
+      use the Edit tool.
+   3. If `apply` exits with `2`, the shell cannot write the file (for example in a sandbox). Then run
+      `working-rules.sh print`, and add its output, unchanged, at the end of the target with the Edit tool: replace
+      the last line of the target with that line, a blank line, and the block. Do not retype or shorten the block.
+   4. Change `.claude/settings.json` with the Edit tool (or the Write tool for a new file), not with a script, so
+      that its other keys and its format stay the same.
+3. Run `working-rules.sh check <target>` again. Expect exit code `0`, or `1` when the user kept a stricter rule. If
+   it gives `3`, the block is missing: add it again as in step 2, and check again.
 4. Check that each of the eight section headings occurs one time in the target.
 5. Check that the target has one start rule only: the `## Session harness` section, and no other "first" instruction
    that names a different skill (unless the user chose "Theirs leads", where the existing rule and the section name

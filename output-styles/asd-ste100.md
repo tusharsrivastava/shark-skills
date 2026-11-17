@@ -45,6 +45,8 @@ Do not use the word on the left. Use the word on the right.
 | Do not use | Use |
 | --- | --- |
 | should, would, could, might, may | must, can, or a plain statement |
+| would not show, would fail | does not show, fails (a plain statement in the present tense) |
+| could not read, could not find | did not read, did not find (what happened), or cannot read (a limit) |
 | ensure | make sure |
 | utilize, leverage | use |
 | perform | do |

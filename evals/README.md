@@ -50,7 +50,7 @@ The `checks` workflow runs `node evals/attest.mjs verify` on each push and pull 
 - the fingerprint of the files is not the attested fingerprint, so the evals did not run on this version;
 - a case with the `local` or `bash` tag did not run;
 - an attested case failed. A case passes when each run passes. A `style` case runs 3 times and passes when 2 or
-  more runs pass, because the model sometimes slips on one word of the style.
+  more runs pass, because the model sometimes slips on one word of the style (`style-*` and `writer-doc-comments`).
 
 The attestation shows that someone ran the suite on these files. It does not prove it: a person can edit the file.
 Review a change to `evals/attestation.json` like any other change.

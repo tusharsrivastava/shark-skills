@@ -1,9 +1,9 @@
 {
-  "fingerprint": "sha256:14f6a4a40bb630abe15258302bb457d48eba16c2d89d9486c7add835fd03a4d6",
-  "files": 135,
-  "ranAt": "2026-11-17T14:40:55.402Z",
+  "fingerprint": "sha256:b8b2a759d632345b63b821954036abe83b5d4f270766005f09c178be7a7b084b",
+  "files": 137,
+  "ranAt": "2026-11-17T15:58:30.900Z",
   "claudeVersion": "2.1.326",
-  "costUsd": 2.24,
+  "costUsd": 2.49,
   "casesPassed": 9,
   "casesTotal": 9,
   "cases": [
@@ -80,8 +80,8 @@
         "style"
       ],
       "runs": 3,
-      "runsPassed": 2,
-      "score": 0.933,
+      "runsPassed": 3,
+      "score": 1,
       "passed": true
     },
     {
@@ -91,19 +91,20 @@
         "style"
       ],
       "runs": 3,
-      "runsPassed": 3,
-      "score": 1,
+      "runsPassed": 2,
+      "score": 0.933,
       "passed": true
     },
     {
       "name": "writer-doc-comments",
       "tags": [
         "local",
-        "comments"
+        "comments",
+        "style"
       ],
-      "runs": 1,
-      "runsPassed": 1,
-      "score": 1,
+      "runs": 3,
+      "runsPassed": 2,
+      "score": 0.944,
       "passed": true
     }
   ]

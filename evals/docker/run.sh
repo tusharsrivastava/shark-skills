@@ -6,7 +6,8 @@
 #
 # The Bash sandbox of Claude Code (bubblewrap) needs user namespaces and its own /proc. Docker blocks both by default,
 # so the container starts with seccomp=unconfined and systempaths=unconfined. It does not get --privileged or extra
-# capabilities, and it mounts only this repository.
+# capabilities, and it mounts only this repository. The eval workspaces go in evals/results/tmp on that mount: in the
+# container's own /tmp, the Bash sandbox cannot write to the workspace, which a real session can do.
 #
 # The token comes from CLAUDE_CODE_OAUTH_TOKEN, or from the macOS Keychain item "shark-eval-claude-token" (make it
 # with `claude setup-token`, then `security add-generic-password -a "$USER" -s shark-eval-claude-token -w`). The
@@ -25,9 +26,11 @@ fi
 export CLAUDE_CODE_OAUTH_TOKEN
 
 docker build --quiet -t "$image" "$root/evals/docker" >/dev/null
+mkdir -p "$root/evals/results/tmp"
 docker run --rm \
   --security-opt seccomp=unconfined \
   --security-opt systempaths=unconfined \
   -e CLAUDE_CODE_OAUTH_TOKEN \
+  -e TMPDIR=/work/evals/results/tmp \
   -v "$root":/work \
   "$image" evals/run.sh "$@"

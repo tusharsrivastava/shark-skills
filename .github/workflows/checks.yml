@@ -20,3 +20,5 @@ jobs:
         run: node evals/attest.mjs verify
       - name: Hook unit tests
         run: node --test hooks/*.test.mjs
+      - name: Working rules script tests
+        run: bash skills/init/scripts/working-rules.test.sh

@@ -1,6 +1,6 @@
 ---
-runs: 1
-tags: ["local", "comments"]
+runs: 3
+tags: ["local", "comments", "style"]
 max_turns: 30
 timeout_seconds: 900
 allowed_tools: ["Agent", "Read", "Glob", "Grep", "Write", "Edit", "Skill"]
