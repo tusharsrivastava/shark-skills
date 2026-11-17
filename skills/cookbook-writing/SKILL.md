@@ -1,6 +1,6 @@
 ---
 name: cookbook-writing
-description: Write or rewrite a cookbook tutorial chapter for engineers who join the team. ASD-STE100, one story for the whole tutorial, terms taught as "plain idea, then the name", reading-level limits checked by a script, a link to the handbook at each step, and a checked result. Use when you add a tutorial or a chapter, rewrite a chapter in the cookbook style, update a chapter after a build or after a handbook change, or when the user mentions the cookbook, a tutorial, onboarding docs, or the reading level of a tutorial.
+description: Method and style for a cookbook tutorial chapter. One story, each term taught as a plain idea first, reading levels checked by a script. Use when you write or review a tutorial or onboarding document.
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 

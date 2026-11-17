@@ -46,8 +46,8 @@ A design fork (two sensible designs) gets the same interview, also in a fast ses
 
    **Done when** the user says yes to this text.
 2. **Plan the build.** One change in one area: one `shark:code-writer`. Work across modules or files: the round
-   contract and the split (operator §6). Each lane gets a worktree, a test database and a migration number
-   (operator §7).
+   contract and the split (`references/orchestration.md` §6). Each lane gets a worktree, a test database and a migration number
+   (`references/orchestration.md` §7).
 3. **Build.** Send the spec, without changes, to `shark:code-writer` with the brief template
    (`references/brief-template.md`). Give the progress in one line. If the build needs a decision that the spec
    does not contain, the writer records it in its report. Do not let a shared decision pass without your check.

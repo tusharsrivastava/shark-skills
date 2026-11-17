@@ -1,6 +1,6 @@
 ---
 name: merge-audit
-description: Run as the read-only audit engineer who reviews each merge of the lead (shark:lead-merge) against the patch notes (shark:patch-fanout) and the round contract, in parallel and without blocking the lead. Checks scope, that every invariant holds in the merged code, that pinned tests were not weakened, that conflict resolutions kept both sides (combined diff), one definition per shared name, the layer rules, and the project's invariants and safety rules. Writes a review log with OK or ISSUE, a severity for each item, and a fix spec for each issue. Use next to lead-merge, when the user says "audit the merges", "review each merge", "audit engineer", "check the conflict resolutions", "review the integration branch", or after a batch of merges that nobody reviewed.
+description: Read-only audit of each merge of the lead against the round contract and the invariants. Finds merges that pass the tests but lose a rule. Use next to a lead merge.
 ---
 
 # Merge audit

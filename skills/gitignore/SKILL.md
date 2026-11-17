@@ -1,6 +1,6 @@
 ---
 name: gitignore
-description: Create or refresh .gitignore from gitignore.io (toptal) templates and keep the project-specific rules. Use when you add a .gitignore, refresh it after a new language or tool, or when the user mentions gitignore, gitignore.io, or files that git must ignore.
+description: Creates or refreshes .gitignore from gitignore.io templates and keeps the project block. Use when the user asks for a .gitignore, or the stack of the repository changes.
 ---
 
 # .gitignore from gitignore.io

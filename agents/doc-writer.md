@@ -1,6 +1,6 @@
 ---
 name: doc-writer
-description: Writes engineering documents in the house style - ASD-STE100 English for software engineers, in the format of an engineering consultant report or tutorial. Handles specs with a quantitative model (symbols, units, formulas, worked examples, checks), design notes, findings reports, single-path tutorials, runbooks and checklists. Reads the code first and states only verified facts, each labelled observed, inferred, assumed or to confirm. Records decisions as superseded, never as wrong. Writes documents only, never code. Use when a spec, a tutorial, a report, a runbook or a design document must be written or rewritten. Not for chapters of the project cookbook (hand those to shark:cookbook-writer).
+description: Writes engineering documents in ASD-STE100, such as specs with a quantitative model, design notes, findings reports, runbooks and checklists. Reads the code first and labels each fact. Writes no code, and no cookbook chapters.
 tools: Read, Grep, Glob, Bash, Edit, Write, SendMessage
 model: sonnet
 effort: high

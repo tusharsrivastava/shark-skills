@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Record and prune the handoff file, the state that carries between sessions, so it stays short and live. Use when adding or changing a handoff entry, when the file passes its word budget, when rewriting it for a session restart, or when the user says "handoff", "what should the next session know", or "prune the handoff".
+description: Records and prunes the handoff file, the state that carries between sessions. Use at the end of a session, before a context reset, or when the user asks where things stand.
 ---
 
 # Handoff file

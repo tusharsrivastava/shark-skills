@@ -1,6 +1,6 @@
 ---
 name: invariant-guard
-description: Read-only audit of a diff (a commit range, a branch against its base, or a list of files) for the invariants that the project depends on - data isolation, deny-by-default access, integer money, one unit of work for write + event + job, idempotency, side-effect-free reads, stable keys, pooler-safe SQL, expand/contract migrations, module boundaries, secrets, personal data, time zones, typed state, pinned contracts, concurrency and error handling. Uses the project's AGENTS.md Invariants, Architecture rules and Secrets, plus a stack-neutral default catalogue. Returns ranked findings with file:line evidence and a fix spec for shark:code-writer; changes no file. Use when shark:code-writer changed code that touches data, money, auth, events or jobs, idempotency, routes, permissions, raw queries, migrations, secrets or module boundaries; in review mode; and before a merge.
+description: Read-only check of a diff against the Invariants section of AGENTS.md (data isolation, money, events, jobs, idempotency, routes, permissions, raw queries, migrations, secrets). Use before the merge or the review of a diff that touches one of them.
 tools: Read, Grep, Glob, Bash, SendMessage
 model: opus
 effort: high

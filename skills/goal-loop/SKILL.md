@@ -1,6 +1,6 @@
 ---
 name: goal-loop
-description: Drive fix rounds toward one measurable goal on N failing scenarios (bench cases, end-to-end cases, acceptance checks). Each round runs the scenarios once at production settings, classifies every failure (RULE, CODE, DATA, MISSING, HARNESS) with parallel debuggers, asks the owner only about business rules, writes a round contract, fixes in lanes, merges with one lead, and runs again. Stops when all pass and a confirm run agrees, at the round limit, or when a round finds more than it fixes. Use when the user says "goal loop", "make these N cases pass", "fix rounds", "round N", "until the scenarios pass", or gives a set of failing cases and a goal.
+description: Fix rounds toward one measurable goal on N failing scenarios (bench cases, end-to-end cases, evaluation cards). Classifies each failure, fixes in lanes, merges once, measures again. Use when the user says make these pass, or a bench is red.
 ---
 
 # Goal loop

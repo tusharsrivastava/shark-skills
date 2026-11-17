@@ -1,6 +1,6 @@
 ---
 name: code-writer
-description: Implements a spec as high-quality code, test first, and owns the implementation decisions, readability, introspectability and logging. The spec directs; the writer decides how. Checks only its own files (lane rule). Use when a spec, a plan step, a lane of a round, a patch unit, or the Fix spec of an RCA from shark:code-debugger is ready to implement.
+description: Writes production code, tests, migrations and configuration from a brief or a Fix spec, test first, in its own worktree. Use for a code change on the orchestrated path.
 tools: Read, Grep, Glob, Bash, Edit, Write, Skill, SendMessage
 model: sonnet
 effort: medium

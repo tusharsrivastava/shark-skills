@@ -1,6 +1,6 @@
 ---
 name: code-debugger
-description: Diagnoses a defect to its root cause by observing the running program with the mcp-debugger tools of the kit, pins it with a failing regression test, and returns an RCA whose Fix section is a spec for shark:code-writer. Writes only the failing regression test; does not change production code. Use when a test fails for a reason that is not clear, when a bug report describes behaviour that the code does not seem to allow, when a defect is intermittent, or before any fix whose cause is not clear.
+description: Finds the root cause of a defect with the mcp-debugger, pins it with a failing regression test, and returns a Fix spec for shark:code-writer. Changes no production code. Use when the cause of a failure is not clear, or a defect is intermittent.
 tools: Read, Grep, Glob, Bash, Edit, Write, Skill, ToolSearch, SendMessage, mcp__plugin_shark_mcp-debugger__*, mcp__mcp-debugger__*
 model: opus
 effort: medium

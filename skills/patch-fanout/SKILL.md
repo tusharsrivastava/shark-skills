@@ -1,6 +1,6 @@
 ---
 name: patch-fanout
-description: Port many independent patch units in parallel, one patch agent (shark:code-writer) for each unit, each in its own worktree and branch from the integration head, each with a patch note for the lead. Each agent verifies the gap against production first, writes the test first, ports into the current architecture, runs light checks on its own files only, and commits. The lead (shark:lead-merge) merges the branches as they arrive; shark:merge-audit reviews each merge. Use after a port audit gives a unit index (UNITS.md from shark:port-audit), when the user says "fan out the units", "one agent per unit", "patch agents", "re-port the gaps", "parallel fixes", or when many small independent fixes must land fast without waiting for each other.
+description: Ports many independent patch units in parallel, one shark:code-writer for each unit, from an audit or a decision list. Use after shark:port-audit, or for a batch of small independent fixes.
 ---
 
 # Patch fan-out

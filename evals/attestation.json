@@ -1,9 +1,9 @@
 {
-  "fingerprint": "sha256:1fbb4dbf814b68232a5374eacff120991b0654cf4e52fc5af8b8702794cadb60",
-  "files": 137,
-  "ranAt": "2026-11-17T16:35:46.433Z",
+  "fingerprint": "sha256:7c78e27c2f376c5dcd51bcf9711914c8fd745ef53b414b5cced10423ae9fea6c",
+  "files": 139,
+  "ranAt": "2026-11-17T16:46:44.402Z",
   "claudeVersion": "2.1.326",
-  "costUsd": 2.48,
+  "costUsd": 2.06,
   "casesPassed": 9,
   "casesTotal": 9,
   "cases": [

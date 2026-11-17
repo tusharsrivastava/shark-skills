@@ -1,6 +1,6 @@
 ---
 name: init
-description: Sets up a repository for the shark kit, one time for each project. Finds the project file that Claude Code reads (CLAUDE.md or AGENTS.md, or makes AGENTS.md), adds the missing project sections of the shark template (Commands, Invariants, Architecture rules, Test scope, Secrets, Docs layout, Owner rules, Session harness) with values found in the repository, and adds the Working rules block between markers. It keeps all existing text. It detects an orchestrator that the project already uses and asks which one leads, so the file never has two start rules. By default the Session harness makes Claude load shark:operator at the start of each session. It sets the project output style to shark:asd-ste100 in .claude/settings.json. Use when the user says "init", "set up shark", "adopt shark", "configure this repo for shark", when a project has no AGENTS.md or CLAUDE.md sections that the shark skills need, or after a kit update to refresh the Working rules.
+description: Sets up a repository for shark one time. Adds the missing template sections to CLAUDE.md or AGENTS.md with values from the repository, the Working rules block, one session start rule, and the shark:asd-ste100 output style. Keeps existing text. Use when the user says init or set up shark, or after a kit update.
 ---
 
 # Init

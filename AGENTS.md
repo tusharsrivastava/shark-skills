@@ -134,82 +134,33 @@ Invoke `/shark:operator` first, before the first answer.
 
 ## Working rules
 
-These rules come from the build of a production system. Each one prevents a failure that cost hours.
+These rules come from the build of a production system. Each one prevents a failure that cost hours. The full
+methods are in the `shark:operator` references; agents get them in their briefs.
 
 ### 1. How a session runs
 
-- **The session harness runs first**, before the first answer. The `## Session harness` section names it. The
-  default is `/shark:operator`, which sets the mode (feature, review, debug).
-- **The main session is the operator.** It talks with the user, writes briefs and checks results. Long work
-  (fixes, gates, merges, reviews) runs in background agents.
-- **Small, clear work stays in the main session.** A question, a review, or a change in one module with a clear
-  expected result and no change to a public interface: the main session does it directly, with no subagent.
-- **`shark:code-writer` writes production code for larger work** (the paths in "Architecture rules"). The main
-  session writes specs, docs and configuration of the agents.
-- **A bug goes to `shark:code-debugger` first.** It returns a root cause, a failing regression test and a fix spec.
-  Then `shark:code-writer` fixes it.
-- **Specialists:**
-
-| Need | Agent or skill |
-| --- | --- |
-| Design check, SOLID, patterns, contracts | `shark:system-design` skill; `shark:architect` for a costly senior review |
-| Merge of parallel lanes | `shark:lead-engineer` with `shark:lead-merge` |
-| Independent check of each merge | `shark:merge-audit` |
-| A diff that touches an item of "Invariants" | `shark:invariant-guard` (read-only) |
-| Fix rounds on N failing scenarios | `shark:goal-loop` |
-| Rules that a rewrite lost | `shark:port-audit`, then `shark:patch-fanout` |
-| Commits | `shark:commit-blocks` |
-| Specs, reports, runbooks | `shark:doc-writer` |
-| Tutorials | `shark:cookbook-writer` |
-| State between sessions | `shark:handoff` |
-
-- **Ask the design question before the build.** When two designs are sensible, ask the owner, with a
-  recommendation. A trade-off on behaviour, latency, cost or data loss goes to the owner as a question, also under
-  "decide for me". Build on the recommended default and mark it "taken by default, owner to confirm".
+- **The session harness runs first**, before the first answer. `## Session harness` names it; the default is
+  `/shark:operator`.
+- **Small, clear work stays in the main session:** a question, a review, or a change in one module with a clear
+  expected result and no public-interface change. Larger work goes to agents: `shark:code-writer` writes production
+  code, `shark:code-debugger` finds a cause that is not clear, `shark:lead-engineer` merges, and
+  `shark:invariant-guard` checks a diff that touches `## Invariants`.
+- **Ask the design question before the build.** When two designs are sensible, or a trade-off changes behaviour,
+  latency, cost or data safety, ask the owner with a recommendation. A default that you build on is marked "taken by
+  default, owner to confirm".
 
 ### 2. Split, timebox, merge
 
-1. **List every known defect first**, each with its failure and `file:line`. Find wiring gaps with one static scan
-   (each produced value has a reader, each read value has a producer). Do not run slow flows again and again.
-2. **Contract step before the split.** One agent (5 to 10 min) writes the round contract:
-   - each shared name with its one owner file;
-   - every writer and reader of each new or changed event or field;
-   - the invariants and owner decisions to keep;
-   - each rule to delete, with its callers and its new owner;
-   - the lane boundaries.
-
-   Lanes read it first. A lane never decides a shared thing alone: it stops and reports. The merge checks against
-   the contract.
-3. **Split by module:** one module and one cause per lane. No two lanes on one cause, module or function. Prefer
-   one behaviour end to end per lane.
-4. **A core change splits by file.** First a design spec with the math and a boundary table. Then a file plan
-   (one row for each file: interface, tests, dependencies). Then one writer for each file, in parallel, 5 to 10 min
-   each.
-5. **Timebox:** 20 min for a lane, 5 to 10 min for a one-file writer, 40 min for a merge. Each agent gets one
-   automatic grace of 20 % to finish the step in progress, not to start new work. For more time, it asks the
-   operator before the grace ends. Only the operator extends. With no answer, the agent commits what is green and
-   reports the rest.
-6. **A lane checks only its files:** lint, format and types on its files, and its own tests. At most one check
-   shell for each agent. The lead runs the test folders and the whole-repository type check once for each batch.
-7. **One merge for each round.** It runs `gate:fast` (at most 5 min) and writes one blocker table. The next round
-   starts from it.
-8. **Costly runs last, once each:** `gate:full`, integration tests, `bench`. Never an early full gate "while
-   waiting". Freeze new lanes when the last costly run starts; its findings go to the next round.
-9. **An estimate is one round.** A round that finds more than it fixes stops. Tell the owner and list again.
+List every known defect first. A contract step comes before parallel lanes; a lane never decides a shared thing
+alone. One module and one cause for each lane. Timebox: 20 min for a lane, 5 to 10 min for a one-file writer, 40 min
+for a merge, with one grace of 20 %; only the operator extends. A lane checks only its files; one merge for each
+round runs `gate:fast`. Costly runs (`gate:full`, `bench`) come last, one time each.
 
 ### 3. Worktrees and test databases
 
-- Each parallel build gets its own worktree and its own test database. The brief names both.
-- Make a test database with `test-db:copy` from a template that is migrated to the head of the shared branch.
-  It takes seconds. A build from zero applies every migration and can take 30 min or more.
-- Run tests with the "reuse the database" option (Python `pytest-django`: `--reuse-db`; Rails: run only the new migrations on the test database, do not reset it). A new migration then
-  costs seconds.
-- Rebuild from zero only when a migration that the database has already was edited. Even then, copy the template
-  again.
-- The brief gives each build its migration numbers and the part of each shared file that it owns.
-- After a merge or a stop: commit the branch, remove the worktree (`git worktree remove`, `git worktree prune`),
-  drop its test databases. Keep the root tree and one active worktree. Each worktree with its dependencies can
-  take hundreds of MB.
+Each parallel build gets its own worktree and a test database copied with `test-db:copy` from a migrated template.
+Reuse the database between runs; rebuild from zero only after an edited migration. After a merge or a stop, commit,
+remove the worktree and drop its test databases.
 
 ### 4. Git rules
 
@@ -244,63 +195,31 @@ passing) and the fix. Ask the owner first only when the fix:
 
 ### 6. Decisions
 
-- A newer decision **supersedes** an older one. Never call the older one "wrong", and never delete it.
-- Record the link both ways, with the date and the scope. Old row: "Superseded in part by <new> (<date>): <scope>".
-  New row: "Supersedes <old> in part: <scope>".
-- Read each row before you mark it superseded. Never mark rows in bulk.
+A newer decision supersedes an older one: never call the older one "wrong", and never delete it. Record the link
+both ways, with the date and the scope. Read each row before you mark it superseded.
 
 ### 7. Reports
 
-- ASD-STE100 (the output style `shark:asd-ste100`). Outcome first.
-- Label each claim: observed (seen in code, a log, an output) or inferred.
-- One recommendation, with its reason. The alternatives in one line.
-- Reports, reviews and diagrams are Markdown files with their full path. Never publish them as pages.
-- Name the gate that ran, what is not verified, and each file that is changed but not committed.
+ASD-STE100 (the output style `shark:asd-ste100`), outcome first, each claim labelled observed or inferred, one
+recommendation. A report or a diagram is a Markdown file, never a published page. Name the gate that ran, what is
+not verified, and each changed file that is not committed.
 
 ### 8. Evaluation first
 
-- Measure a baseline before you add complexity (a cache, embeddings, a new model, a new service).
-- Compare a rebuild with the old version by measurement on the main branch. Do not keep the old path alive
-  behind a switch: the removal is the work.
-- A speed change never degrades correctness. Overlap, caching and transport are allowed. A change that drops data
-  or uses a cheaper model needs a measured A/B result and the owner's OK.
+Measure a baseline before you add complexity. A speed change never degrades correctness. A change that drops data or
+uses a cheaper model needs a measured A/B result and the owner's OK.
 
-### 9. Deploy pitfalls
+### 9. Deploy
 
-- A running worker keeps the old modules in memory. Restart every worker type before or with the migration, and
-  before it serves new code.
-- Restart every worker type, also the relay that sends outbox events. A worker that is not restarted can stop the
-  delivery of events without an error.
-- A task queue has time limits (Python Celery: soft and hard limits). Long work needs a budget and a
-  continuation, or its own limit.
+Restart every worker type, also the outbox relay, before or with a migration. A worker that is not restarted runs
+old code against the new schema.
 
 ### 10. Agent hygiene
 
-- Each brief states the timebox, the grace rule, the gate, the worktree, the test database and the files that
-  the agent owns.
-- Note the start time of each background agent. At timebox + 5 min with no result, read its output or send it a
-  status message.
-- A background agent that waits on a permission prompt sends no notice. Give unattended agents only allow-listed
-  tools, and tell them never to ask.
-- Run long tests in the background and read the exit code from the completion notice. Never wait in a
-  `until grep …; do sleep …; done` loop.
-- Each wait loop has an end condition and a time limit. Stop your own wait loops before you report.
+Each brief states the timebox, the grace, the gate, the worktree, the test database and the files that the agent
+owns. Wait on completion notices, never in a sleep loop. Give unattended agents only allow-listed tools.
 
 ### 11. Pitfalls
 
-| Pitfall | Effect | Rule |
-| --- | --- | --- |
-| Lanes run long flows on isolated branches | Each lane finds only the next blocker; the estimate grows by hours | List all defects first; one merge for each round (§2) |
-| Lanes with no shared contract | A third of the time goes to merge rework: copied rules, lost checks | Contract step first (§2) |
-| Many agents run whole-repository checks at once | Each check runs 5 to 10 times slower | Each lane checks only its files (§2) |
-| A test database built from zero for each run | 30 min or more for each run | Copy a migrated template; reuse it (§3) |
-| Python: a test folder and a file inside it in one `pytest` call | pytest collects only the file; the folder tests do not run | Give folders, or files, not both |
-| Python: `pytest-xdist` with database tests | Each worker makes its own new test database (`_gw<N>`) | Copy the template for each worker name, or run without `-n` |
-| Type check on the source only | Type errors in the tests pass | `typecheck` checks the source and the tests |
-| The default gate skips integration tests | An integration test stays red, not seen | `gate:full` includes them |
-| `until ! pgrep -f "<pattern>"` wait loop | The loop matches its own command line and never ends | Wait on the completion notice |
-| A running worker after a deploy | It runs the old code against the new schema | Restart every worker type (§9) |
-| Stored display text ("$28.80") parsed back into money | Wrong values that pass the tests | Typed state; text only at the edge |
-| The same rule in two call sites | The copies drift | One rule, one place |
-| A reader that assumes the shape of a result by itself | It reads `None` with no error when the shape differs | One typed reader for each shape, with a contract test against the real writer |
-| A rewrite deletes code without a list of its rules | Rules are lost and found one at a time | `shark:port-audit` before the rewrite replaces production |
+The pitfalls table (lane, test-database, type-check and wait-loop traps, with the rule for each) is in the
+`shark:operator` reference `pitfalls.md`.

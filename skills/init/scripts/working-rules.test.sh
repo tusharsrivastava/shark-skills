@@ -29,7 +29,7 @@ expect "apply: a file with no final newline" 0 "$script" apply "$dir/nonl.md" "$
 head -1 "$dir/nonl.md" | grep -qx 'no newline at the end' && echo "ok   apply: keeps the last line whole" || { echo "FAIL apply: joined the last line with the block"; failures=$((failures + 1)); }
 
 cp "$dir/new.md" "$dir/stricter.md"
-sed -i.bak 's/^- \*\*The main session is the operator\.\*\*/- **The main session is the operator, always.**/' "$dir/stricter.md"
+awk '{ print } /^### 1\. / { print ""; print "- A stricter project rule." }' "$dir/stricter.md" > "$dir/stricter.tmp" && mv "$dir/stricter.tmp" "$dir/stricter.md"
 cp "$dir/stricter.md" "$dir/stricter.before"
 expect "apply: a different block gives 1" 1 "$script" apply "$dir/stricter.md" "$template"
 cmp -s "$dir/stricter.md" "$dir/stricter.before" && echo "ok   apply: a different block stays as it is" || { echo "FAIL apply: changed a different block"; failures=$((failures + 1)); }

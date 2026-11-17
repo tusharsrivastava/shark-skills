@@ -1,6 +1,6 @@
 ---
 name: system-design
-description: Design, review or refactor the structure of a production system with SOLID, the classic design patterns, the code-smell and refactoring catalogue, and production lessons (typed state, one rule in one place, ports and adapters, transactional outbox, idempotency, pinned contracts, expand/contract, tenant isolation, measured baselines). Language-agnostic. Use when you design a feature, a module or a service boundary; when you review a design, a spec or a diff for structure; when you plan a refactor or a rebuild; when you write a round contract for parallel lanes; or when the user mentions SOLID, design patterns, code smells, refactoring, architecture, coupling, layers, or "make it production-grade".
+description: Design and review of the structure of a system with SOLID, design patterns, contracts and an invariant catalogue. Use for a design choice, a module boundary, a refactor plan or a design review.
 ---
 
 # System design

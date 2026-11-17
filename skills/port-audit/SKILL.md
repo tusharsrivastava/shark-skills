@@ -1,6 +1,6 @@
 ---
 name: port-audit
-description: Find every rule that a refactor or rebuild lost, by a static audit of the deleting commits against the branch that runs in production. Gives one row for each deleted rule (PORTED, GAP, REMOVED ON PURPOSE, UNSURE) with evidence and severity, a summary, and an index of patch units (UNITS.md) for shark:patch-fanout. Read-only (git history and code; no tests, no bench, no model). Use when tests, users or a bench find lost behaviour one item at a time after a large rewrite, before a refactor branch replaces the production branch, before a contract deletes code, or when the user says "port audit", "what did the rebuild drop", "regressions of the refactor", "drift against production", "lost rules", or "deleted rules".
+description: Finds each rule that a refactor or a rebuild lost, by a static audit of the deleting commits against production. Use before a rewrite replaces production code, or when tests stay green but behaviour is lost.
 ---
 
 # Port audit

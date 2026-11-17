@@ -1,6 +1,6 @@
 ---
 name: commit-blocks
-description: Split a working tree into a sequence of conventional commits where every commit builds and passes the gate on its own, so git bisect stays trustworthy. Use when committing more than one logical change, when the user mentions conventional commits, splitting commits, bisect, or clean history, or before opening a pull request.
+description: Splits a working tree into conventional commits, each with one reason, and checks that each commit passes the gate on its own. Use when work is ready to commit.
 ---
 
 # Commits that you can bisect

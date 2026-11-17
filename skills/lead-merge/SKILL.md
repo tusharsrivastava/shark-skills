@@ -1,6 +1,6 @@
 ---
 name: lead-merge
-description: Run as the long-running lead engineer who merges patch or lane branches into one integration branch as they arrive, in batches, from a queue file that is the source of truth. Reads ahead in the queued diffs, resolves conflicts from the patch notes of both sides, runs one combined check per batch, collects snapshot differences without re-recording, writes a merge log and a blocker table, and validates the whole system once at the end before the costly runs. Use when patch agents (shark:patch-fanout) or parallel lanes deliver many branches, when the user says "lead merge", "merge the queue", "merge as they arrive", "batch merge", "integration branch", "merge the lanes", or "validate the port"; the shark:lead-engineer agent loads it for any multi-branch merge.
+description: Method for the long-running lead who merges many patch or lane branches into one integration branch from a queue, with one gate for each batch and a merge log. Use for a merge queue.
 ---
 
 # Lead merge

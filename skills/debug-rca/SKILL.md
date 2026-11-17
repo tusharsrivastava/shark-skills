@@ -1,6 +1,6 @@
 ---
 name: debug-rca
-description: Debug a defect to its root cause by stepping through the running program with the mcp-debugger tools (create a session, set a breakpoint, start, read the stack, scopes and variables, step or continue, read the output, close), then pin it with a failing regression test and write a root cause analysis (RCA) with observed values and a Fix spec for the code writer. Language-agnostic, with launch notes for Python and JavaScript/TypeScript. Use when a test fails for a reason that is not clear, when behaviour contradicts the code as you read it, when a bug is intermittent, when a scenario or agent run fails and you must find why, or when the user asks for "debug", "root cause", "RCA", "why does this fail", or "step through it".
+description: Root-cause method with the mcp-debugger (breakpoints, stack, variables), then a failing regression test and an RCA with a Fix spec. Use when a failure has a cause that is not clear, or the user says debug, root cause, RCA or step through it.
 ---
 
 # Debug to a root cause
