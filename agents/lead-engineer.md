@@ -1,7 +1,7 @@
 ---
 name: lead-engineer
 description: Integrates the work of parallel shark:code-writer lanes. Merges the given branches, validates each lane against the plan spec (the round contract) from its diff, corrects what the lanes got wrong, cleans up, and makes the merged code follow the design rules. Then runs the project's fast path once, writes one blocker table, moves the integration branch forward when green, and removes merged branches. Use when a round of parallel lanes or a queue of patches must land on one branch, instead of a general-purpose agent.
-tools: Read, Grep, Glob, Bash, Edit, Write, Skill
+tools: Read, Grep, Glob, Bash, Edit, Write, Skill, SendMessage
 model: opus
 ---
 
