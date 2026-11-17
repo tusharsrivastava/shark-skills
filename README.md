@@ -104,6 +104,8 @@ It will:
   owner rules and session harness) and the working rules, without touching what you already have
 - Notice if you already run your own orchestrator, and ask which one leads, so your file never gets two start rules
 - Ask for each value it can't find, with a suggested value for each
+- Set the project's output style to `shark:asd-ste100` in `.claude/settings.json`, so replies are short, outcome-first
+  and end with a summary and action items
 
 The skills never hardcode a command. They run a key from your `Commands` table, so the same kit works on Python,
 JS/TS, Go, or anything with a test command.
@@ -260,7 +262,7 @@ production-scale systems, distilled into this setup.
 
 - **[/shark:init](./skills/init/SKILL.md)**: Set up a project once. Brings your `AGENTS.md` or `CLAUDE.md` in line
   with the **shark** template, so every session starts with the operator, or with your own orchestrator if you keep
-  it.
+  it. Sets the `shark:asd-ste100` output style for the project.
 - **[/shark:operator](./skills/operator/SKILL.md)**: Run the session. Sets the mode, writes the briefs, routes the
   work to agents, and checks what comes back. Loads by itself after `/shark:init`.
 - **[/shark:handoff](./skills/handoff/SKILL.md)**: Record and prune the handoff file, so the next session picks up

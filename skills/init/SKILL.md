@@ -1,6 +1,6 @@
 ---
 name: init
-description: Sets up a repository for the shark kit, one time for each project. Finds the project file that Claude Code reads (CLAUDE.md or AGENTS.md, or makes AGENTS.md), adds the missing project sections of the shark template (Commands, Invariants, Architecture rules, Test scope, Secrets, Docs layout, Owner rules, Session harness) with values found in the repository, and adds the Working rules block between markers. It keeps all existing text. It detects an orchestrator that the project already uses and asks which one leads, so the file never has two start rules. By default the Session harness makes Claude load shark:operator at the start of each session. Use when the user says "init", "set up shark", "adopt shark", "configure this repo for shark", when a project has no AGENTS.md or CLAUDE.md sections that the shark skills need, or after a kit update to refresh the Working rules.
+description: Sets up a repository for the shark kit, one time for each project. Finds the project file that Claude Code reads (CLAUDE.md or AGENTS.md, or makes AGENTS.md), adds the missing project sections of the shark template (Commands, Invariants, Architecture rules, Test scope, Secrets, Docs layout, Owner rules, Session harness) with values found in the repository, and adds the Working rules block between markers. It keeps all existing text. It detects an orchestrator that the project already uses and asks which one leads, so the file never has two start rules. By default the Session harness makes Claude load shark:operator at the start of each session. It sets the project output style to shark:asd-ste100 in .claude/settings.json. Use when the user says "init", "set up shark", "adopt shark", "configure this repo for shark", when a project has no AGENTS.md or CLAUDE.md sections that the shark skills need, or after a kit update to refresh the Working rules.
 ---
 
 # Init
@@ -28,7 +28,7 @@ The template is `${CLAUDE_PLUGIN_ROOT}/AGENTS.md`. Read it first. It has three p
    suggested value for each. Do not ask again in the same run.
 4. **Show the change before you write it.** Show a short summary and the new sections. Write only after the user
    says yes.
-5. **Do not commit.** Tell the user which file changed. The commit is a decision of the user.
+5. **Do not commit.** Tell the user which files changed. The commit is a decision of the user.
 6. **Exactly one start rule.** After the run, the project file has one instruction about what runs first in a
    session. Never add a second one next to an orchestrator that the project already uses.
 
@@ -91,7 +91,7 @@ starts each session. Look for:
 If you find none, the `## Session harness` section gets the template default: "Invoke `/shark:operator` first,
 before the first answer."
 
-If you find one, ask the user which one leads. Put the question in the message of step 5. Name the orchestrator and
+If you find one, ask the user which one leads. Put the question in the message of step 6. Name the orchestrator and
 quote the rule or file where you found it. Give these choices:
 
 | Choice | `## Session harness` text | The existing start rule |
@@ -106,12 +106,36 @@ When **shark** leads, check the description of the orchestrator's own skill or a
 start of every session" or similar, tell the user to change that phrase (for example to "Use when the operator
 hands a task to it"). Do not change that file yourself: it is not the project file.
 
-### 5. Ask for the rest
+### 5. Set the output style
+
+The kit ships the output style `shark:asd-ste100`. The skills and agents write their reports for it. Set it for the
+project in `.claude/settings.json`, the settings file that the team shares:
+
+```json
+{
+  "outputStyle": "shark:asd-ste100"
+}
+```
+
+| `.claude/settings.json` | Action |
+| --- | --- |
+| Does not exist | Make it with only the `outputStyle` key. |
+| Exists, with no `outputStyle` key | Add the key. Keep every other key and its value. |
+| Has `"outputStyle": "shark:asd-ste100"` | Change nothing. |
+| Has a different `outputStyle` | Ask in the message of step 6. Quote the current value. Recommend `shark:asd-ste100`. Change it only after a yes. |
+
+Also read `.claude/settings.local.json`, if it exists. Its `outputStyle` overrides the shared file for one user. Do
+not change that file: it is personal. If it sets a different style, name it in the report.
+
+If git ignores `.claude/settings.json` (`git check-ignore -q .claude/settings.json` exits with `0`), the setting
+stays on this machine only. Name this in the report.
+
+### 6. Ask for the rest
 
 Send one message with every value that is still unknown. Use a table: section, item, suggested value, why. Use the
 answer for the rest of the run.
 
-### 6. Add the Working rules block
+### 7. Add the Working rules block
 
 Check the target with the script:
 
@@ -130,26 +154,32 @@ difference against `working-rules.sh print`, and ask the user how to merge.
 
 The first Working rule says that the session harness runs first. The `## Session harness` section names it.
 
-### 7. Write and check
+### 8. Write and check
 
-1. Show the summary: the target file, the sections added, the rows added, and the Working rules action.
-2. After the user says yes, write the file.
+1. Show the summary: the target file, the sections added, the rows added, the Working rules action, and the
+   output style action.
+2. After the user says yes, write the files. Change `.claude/settings.json` with the Edit tool, not with a script,
+   so that its other keys and its format stay the same.
 3. Run `working-rules.sh check <target>` again. Expect exit code `0`, or `1` when the user kept a stricter rule.
 4. Check that each of the eight section headings occurs one time in the target.
 5. Check that the target has one start rule only: the `## Session harness` section, and no other "first" instruction
    that names a different skill (unless the user chose "Theirs leads", where the existing rule and the section name
    the same skill).
+6. Check that `.claude/settings.json` is valid JSON and that its `outputStyle` is the value that the user agreed:
+   `node -e 'console.log(JSON.parse(require("fs").readFileSync(".claude/settings.json","utf8")).outputStyle)'`.
 
-### 8. Report
+### 9. Report
 
 Report in ASD-STE100: outcome first. Name:
 
 - the target file, and each section and row that you added;
 - the session harness that leads, and the orchestrator that you found, if any;
+- the output style in `.claude/settings.json`, a different style in `.claude/settings.local.json`, and whether git
+  ignores the shared settings file;
 - each value that is a suggestion and that the user did not confirm;
 - the next steps for the user:
-  - start a new session, so that Claude Code reads the new project file;
+  - start a new session, so that Claude Code reads the new project file and the output style;
   - add a hook that blocks access to the files of `## Secrets` (the kit does not install one);
   - add `.claude/mcp-debugger.log` to `.gitignore` (`shark:gitignore` can do this).
 
-Do not commit the file.
+Do not commit the files.
