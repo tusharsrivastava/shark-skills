@@ -66,7 +66,8 @@ Rebase a worktree branch on the shared branch before the merge.
 2. Rebase the branch on the main branch, then fast-forward the main branch to it.
 3. If the merge adds a migration, apply it on the main checkout.
 4. Remove the worktree (`git worktree remove`, then `git worktree prune`). Check that the folder is gone.
-5. Delete the branch with `git branch -d`. It refuses work that is not merged, so it is the safe delete.
+5. Delete the branch with `git branch -d`. It refuses work that is not merged, so it is the safe delete. After a
+   cherry-pick, use `git branch -D` only when `git cherry <target> <branch>` prints no `+` line.
 6. Drop the test databases of the worktree.
 
 **Done when** `git worktree list` and `git branch --no-merged <main branch>` show only work in progress.

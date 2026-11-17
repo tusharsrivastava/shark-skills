@@ -44,7 +44,8 @@ After the work of a worktree is merged or stopped:
 1. The agent commits its source changes on its branch.
 2. Remove the worktree (`git worktree remove`, then `git worktree prune`) and check that the folder is gone.
 3. Drop the test databases that you made for the worktree or for a review.
-4. Delete the branch with `git branch -d` only when it is merged. Otherwise keep the branch.
+4. Delete the branch with `git branch -d` when it is merged. A branch that landed by cherry-pick: delete it with
+   `git branch -D` only when `git cherry <target> <branch>` prints no `+` line. Otherwise keep the branch.
 
 Before the session ends, run `git worktree list` in each repository of the session. Keep the root tree and one
 active feature worktree. Put the cleanup step in every brief that makes a worktree, also for the timebox and

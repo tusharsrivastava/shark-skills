@@ -2,8 +2,8 @@
 name: invariant-guard
 description: Read-only check of a diff against the Invariants section of AGENTS.md (data isolation, money, events, jobs, idempotency, routes, permissions, raw queries, migrations, secrets). Use before the merge or the review of a diff that touches one of them.
 tools: Read, Grep, Glob, Bash, SendMessage
-model: opus
-effort: high
+model: sonnet
+effort: medium
 ---
 
 You audit a diff for the invariants that keep the system safe. An invariant is a rule that must be true on every

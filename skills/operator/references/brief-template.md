@@ -30,7 +30,7 @@ Timebox: <N> minutes, from <hh:mm> to <hh:mm>. At the timebox you get one automa
   Keep working during the grace. With no answer at the end of the grace, commit what is green and report the rest.
 Rules: Never ask the user. Record each decision in the report with its reason.
   Never read env or secret files (AGENTS.md › Secrets).
-  Never `git stash`, `--no-verify`, a force push, or `git branch -D`. Push only if this brief says so.
+  Never `git stash`, `--no-verify`, a force push, or `git branch -D` (the lead may, after a `git cherry` check). Push only if this brief says so.
   Every wait loop has an end condition and a time limit. Stop your shells and wait loops before you report.
 Report: in ASD-STE100, outcome first, in this order:
   1. Outcome (one sentence: done, partly done, or blocked).

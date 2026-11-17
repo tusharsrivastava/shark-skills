@@ -141,10 +141,11 @@ methods are in the `shark:operator` references; agents get them in their briefs.
 
 - **The session harness runs first**, before the first answer. `## Session harness` names it; the default is
   `/shark:operator`.
-- **Small, clear work stays in the main session:** a question, a review, or a change in one module with a clear
-  expected result and no public-interface change. Larger work goes to agents: `shark:code-writer` writes production
-  code, `shark:code-debugger` finds a cause that is not clear, `shark:lead-engineer` merges, and
-  `shark:invariant-guard` checks a diff that touches `## Invariants`.
+- **Small and medium work stays in the main session:** a question, a review, or a change with a clear expected
+  result in 3 modules or fewer and about 10 files or fewer, with no migration and no unapproved public-interface
+  change. The main session checks its own diff against `## Invariants`. Larger work goes to agents:
+  `shark:code-writer` writes production code, `shark:code-debugger` finds a cause that is not clear,
+  `shark:lead-engineer` merges, and `shark:invariant-guard` checks a diff that touches `## Invariants`.
 - **Ask the design question before the build.** When two designs are sensible, or a trade-off changes behaviour,
   latency, cost or data safety, ask the owner with a recommendation. A default that you build on is marked "taken by
   default, owner to confirm".
@@ -169,7 +170,7 @@ remove the worktree and drop its test databases.
 | Never `git stash`. | A stash in a shared tree takes the work of another agent. |
 | Never `--no-verify`. | The hooks are the gate. |
 | Never force push. | Other worktrees build on the shared branch. |
-| `git branch -d`, never `-D`. | `-d` refuses a branch that is not merged. |
+| `git branch -d`. Use `-D` only when `git cherry <target> <branch>` prints no `+` line. | `-d` refuses a branch that is not merged. A branch that landed by cherry-pick or rebase is not merged for git, but `git cherry` shows that each of its commits is on the target. |
 | `git worktree remove --force` only on a temporary worktree that you made in this run, or when the only extra files are known leftovers that the merge queue names. | `--force` deletes the work that is not committed in that worktree. |
 | Push only when the owner asks. | Push is an owner decision ("Owner rules"). |
 | Each commit passes the gate on its own. | `git bisect` stays reliable. |

@@ -52,6 +52,11 @@ when the question spans more than one service or module boundary, when it change
 money, tenant or permission rule, when the math has more than one step, or when an `opus` review left the cause
 open. `fable` costs more for each token, so say which condition applies in the brief.
 
+`shark:invariant-guard` runs on the orchestrated path only, on `sonnet` at medium effort. Ask for `opus` (the
+`model` option) when the diff changes a migration or a data model, a tenant-isolation or permission rule, or the
+money or event path across more than one module, or when a `sonnet` check reports a result that is not clear. Say
+which condition applies in the brief.
+
 ## 3. Choose the mode (orchestrated path)
 
 Read the first request of the user. Choose one mode:

@@ -150,7 +150,8 @@ Recompute the hash once, at validation. A contract hash between two services cha
 
 - Edit files only with the Edit or Write tool.
 - Never `git stash`, `--no-verify`, a force push, a rebase of a patch branch, or `git branch -D` without a check
-  that the branch is merged (`git branch --merged`).
+  that each commit of the branch is on the target (`git branch --merged`, or `git cherry <target> <branch>` with no
+  `+` line for a branch that landed by cherry-pick).
 - Never merge into the production branch or the default branch without the owner's OK. Never push without a
   request or an owner rule for that branch.
 - Do not invent a business rule. A case that the spec, the decisions and the code do not decide goes to the

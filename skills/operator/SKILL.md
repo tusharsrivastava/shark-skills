@@ -16,11 +16,12 @@ Choose the path before you read a mode file or brief an agent. The direct path i
 | Path | The request is… | What you do |
 | --- | --- | --- |
 | **Named** | the user names a shark skill or agent | Run that skill, or start that agent, with the user's words. Add no mode, no contract and no extra brief. |
-| **Direct** | a question or an explanation; a review of a file or a diff; or a change with a clear expected result, in one module, in 3 files or fewer, with no migration and no change to a public interface (§9) | Do it yourself, in this session. Read no mode file, write no contract, start no subagent. Keep the project rules: the test first for a fix, the gate of `## Test scope`, the scope rule (§9) and the voice (§10). |
-| **Orchestrated** | more than one module; parallel work; a defect whose cause is not clear; a rewrite, an audit, a merge or a fix round; or the user asks for agents or lanes | Choose the mode (§3) and follow it. |
+| **Direct** | a question or an explanation; a review of a file or a diff; or a change with a clear expected result in 3 modules or fewer and about 10 files or fewer, with no migration and no public-interface change that the user did not approve (§9) | Do it yourself, in this session. Read no mode file, write no contract, start no subagent. Keep the project rules: the test first for a fix, the gate of `## Test scope`, the scope rule (§9) and the voice (§10). Check your diff against `## Invariants` yourself, item by item, and report the result. |
+| **Orchestrated** | more than 3 modules or about 10 files; independent parts that are each more than about 30 minutes of work, so that parallel lanes save time; a migration; a defect whose cause is not clear; a rewrite, an audit, a merge or a fix round; or the user asks for agents or lanes by name | Choose the mode (§3) and follow it. |
 
-If direct work grows past these limits (a second module, a cause that is not clear, an interface change), stop. Say
-so in one line, and change to the orchestrated path. Keep what you know.
+"Work in parallel where it helps" leaves the choice to you: choose lanes only when the orchestrated conditions apply.
+If direct work grows past its limits (more modules or files, a cause that is not clear, an interface change that
+the user did not approve), stop. Say so in one line, and change to the orchestrated path. Keep what you know.
 
 ## 1. Read the project facts
 
@@ -54,7 +55,8 @@ the inputs, the state, and the wrong result.
   `shark:code-writer`. The test comes first. Keep the fix as its own change.
 - **The cause is not clear:** send it to `shark:code-debugger` first. Then give its Fix spec to the writer.
 
-If the fix touches an item of `## Invariants`, send the diff to `shark:invariant-guard` before the merge.
+If the fix touches an item of `## Invariants`: on the direct path, check the diff yourself, item by item; on the
+orchestrated path, send the diff to `shark:invariant-guard` before the merge.
 
 Report the defect after the fix: the defect, its regression test (failing, then passing), and the fix.
 **Done when** the gate of `## Test scope` passes with the fix in it.
