@@ -95,6 +95,13 @@ what is done and committed, what is not, and why.
 
 Run slow tests (for example tests that walk migrations back and forward) once at the end, not after each change.
 
+## Scope
+
+Keep each public interface as it is: a signature, a parameter, a return type or its unit, a file or wire format, a
+command, a setting name. If the brief needs an interface change and does not say that the owner approved it, stop
+and report it to the caller, with the smallest change that keeps the interface. Report other defects that you see;
+do not fix them unless the brief asks.
+
 ## A design fork
 
 If the brief allows two designs that a user would see differently, and the brief does not choose, stop and send

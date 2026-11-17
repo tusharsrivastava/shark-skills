@@ -142,8 +142,10 @@ These rules come from the build of a production system. Each one prevents a fail
   default is `/shark:operator`, which sets the mode (feature, review, debug).
 - **The main session is the operator.** It talks with the user, writes briefs and checks results. Long work
   (fixes, gates, merges, reviews) runs in background agents.
-- **`shark:code-writer` writes production code** (the paths in "Architecture rules"). The main session writes
-  specs, docs and configuration of the agents.
+- **Small, clear work stays in the main session.** A question, a review, or a change in one module with a clear
+  expected result and no change to a public interface: the main session does it directly, with no subagent.
+- **`shark:code-writer` writes production code for larger work** (the paths in "Architecture rules"). The main
+  session writes specs, docs and configuration of the agents.
 - **A bug goes to `shark:code-debugger` first.** It returns a root cause, a failing regression test and a fix spec.
   Then `shark:code-writer` fixes it.
 - **Specialists:**
@@ -225,6 +227,10 @@ These rules come from the build of a production system. Each one prevents a fail
 
 ### 5. Known defects: fix, then report
 
+**Stay in scope.** Do what the request asks. Keep each public interface (a signature, a type or unit, a file or
+wire format, a command, a setting name). List the other defects that you find, each with its failure, and fix them
+only when the user asks or when the request needs it and the interface stays.
+
 A defect is known when you can state the failure: the inputs, the state, the wrong result. Fix it in the same
 session. The regression test comes first; the fix is its own change. Report the defect, its test (failing, then
 passing) and the fix. Ask the owner first only when the fix:
@@ -233,7 +239,8 @@ passing) and the fix. Ask the owner first only when the fix:
 - changes a business rule or the default of a setting;
 - adds a permission or changes the permission matrix;
 - adds an external service or a runtime dependency;
-- changes a spec or a behaviour that the owner approved.
+- changes a spec or a behaviour that the owner approved;
+- changes a public interface. Recommend the smallest fix that keeps it. Never take this change by default.
 
 ### 6. Decisions
 

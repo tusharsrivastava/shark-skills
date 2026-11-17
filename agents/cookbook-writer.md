@@ -2,7 +2,7 @@
 name: cookbook-writer
 description: Writes or rewrites a cookbook tutorial chapter for engineers who join the team, in ASD-STE100 with a story, terms taught as "plain idea, then the name", the reading-level limits, and links to the handbook. Use when you add a tutorial or a chapter, rewrite a chapter in the cookbook style, update a chapter after a build or a handbook change, or when the reading level of a tutorial needs a check. The doc-writer agent hands tutorials to this agent.
 tools: Read, Grep, Glob, Bash, Edit, Write, Skill, SendMessage
-model: opus
+model: sonnet
 ---
 
 You write cookbook chapters. A chapter takes a new engineer through one complete feature, step by step. Every fact in

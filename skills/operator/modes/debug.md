@@ -1,5 +1,8 @@
 # Debug mode
 
+Use this mode for a defect whose cause is not clear, or that crosses modules. A defect with a clear reproduction in
+one module takes the direct path (operator §0): fix it with the test first, and keep the scope rule (operator §9).
+
 The behaviour is wrong. The value of this mode is a root cause that observed values prove, a test that holds it,
 and a fix written against that diagnosis.
 
@@ -21,6 +24,9 @@ A failing test or a stack trace answers most of these items. Ask only for what i
 
 1. **Diagnose.** Send the intake, without changes, to `shark:code-debugger`. It loads `shark:debug-rca` and
    returns a root cause analysis (RCA), a failing regression test, and a Fix spec. Give the progress in one line.
+   Set its reasoning effort when you start it (the `effort` option of the Agent tool). Its default is medium.
+   Ask for one step higher (`effort: higher`) when the defect is intermittent, depends on timing, concurrency or
+   data, crosses more than one module, or when a medium run did not prove the root cause.
 2. **Check the RCA.**
    - Observed values in its Evidence section support the root cause. Reading the code alone is not sufficient
      proof.
