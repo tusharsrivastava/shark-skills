@@ -217,6 +217,7 @@ These rules come from the build of a production system. Each one prevents a fail
 | Never `--no-verify`. | The hooks are the gate. |
 | Never force push. | Other worktrees build on the shared branch. |
 | `git branch -d`, never `-D`. | `-d` refuses a branch that is not merged. |
+| `git worktree remove --force` only on a temporary worktree that you made in this run, or when the only extra files are known leftovers that the merge queue names. | `--force` deletes the work that is not committed in that worktree. |
 | Push only when the owner asks. | Push is an owner decision ("Owner rules"). |
 | Each commit passes the gate on its own. | `git bisect` stays reliable. |
 | One reason for each commit; a refactor never in the same commit as a behaviour change. | A review and a revert stay small. |

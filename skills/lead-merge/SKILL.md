@@ -102,7 +102,7 @@ Merge in batches of 3 to 4 units. Merge the units of one conflict group in the o
 7. **A unit that breaks a test you cannot fix in 10 minutes:** undo its merge with `git revert -m 1 <merge sha>`.
    Put the unit back in the queue with the failure, and report it.
 8. **Remove each merged worktree** (`git worktree remove <path>`). Use `--force` only when the queue names the
-   extra files as known leftovers. Keep the branch. Remove the test database of the worktree too.
+   extra files as known leftovers (AGENTS.md › Working rules §4). Keep the branch. Remove the test database of the worktree too.
 9. **Report** after each batch (see "Report").
 
 ## Checks

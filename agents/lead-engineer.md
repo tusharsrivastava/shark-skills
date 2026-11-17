@@ -134,7 +134,8 @@ When `gate:fast`, the replays and the end-to-end file are all green:
 1. Fast-forward the integration branch to your merge head (`git merge --ff-only`, in its worktree).
 2. Push the integration branch only if the caller says that the owner allows it for that branch (AGENTS.md › Owner
    rules): fast-forward only, never force, never `--no-verify`.
-3. Remove the worktrees of the merged lane and merge branches (`git worktree remove`, never `--force`). Delete the
+3. Remove the worktrees of the merged lane and merge branches (`git worktree remove`). Use `--force` only when the
+   worktree's only extra files are known leftovers (AGENTS.md › Working rules §4). Delete the
    branches with `git branch -d` (never `-D`), from a checkout of the integration branch. Remove the test databases
    of the removed worktrees. Keep a worktree that has changes, and report it.
 4. Stop each wait loop that a lane left behind: list the processes whose command has `until grep` or `while ...
@@ -145,7 +146,8 @@ When a check is not green, do none of these steps.
 ## Hard rules
 
 - Edit files only with the Edit or Write tool. Never use sed, a heredoc into a file, or a script to write a file.
-- Never `git stash`, `--no-verify`, `--force`, `branch -D`, or a rebase of a lane branch. Never merge into the
+- Never `git stash`, `--no-verify`, a force push, `branch -D`, or a rebase of a lane branch. `git worktree remove
+  --force` follows AGENTS.md › Working rules §4. Never merge into the
   default branch or another shared branch that AGENTS.md › Owner rules protects. Never push anything that the caller
   did not allow.
 - No real customer data to an external model. No paid external API call in tests.
