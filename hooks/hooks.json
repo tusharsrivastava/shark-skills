@@ -1,0 +1,17 @@
+{
+  "description": "shark: refuse each tool call on the secret files that the project's ## Secrets section names",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|MultiEdit|Write|NotebookEdit|Grep|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/deny-secrets.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
