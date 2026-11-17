@@ -95,8 +95,9 @@ Examples (keep the ones that apply):
 ## Secrets
 
 - Never read or write: `<.env, .env.*, secrets/*, *.pem>`. The only exception: `<.env.example>`.
-- Enforced by: `<hook path, for example .claude/hooks/deny-env-access.sh>`. The hook refuses each tool call on these
-  files.
+- Enforced by: the shark hook `deny-secrets`. It reads the two lists above and refuses each tool call on these files
+  (Read, Edit, Write, Grep, and Bash commands that name them). Example files (`*.example`, `*.sample`, `*.template`)
+  always stay readable. Write `none` in the first list to turn the hook off.
 - The application loads the values at runtime: `<the loader, for example docker compose env_file, direnv>`.
 - A report or a document names a setting, never its value.
 

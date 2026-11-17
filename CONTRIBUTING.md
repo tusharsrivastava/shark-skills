@@ -20,6 +20,7 @@ follow.
 | Skills | `skills/<name>/SKILL.md`, with `scripts/` and `references/` if needed |
 | Output style | `output-styles/asd-ste100.md` |
 | Debugger MCP server | `.mcp.json` |
+| Hooks | `hooks/hooks.json`, with each script and its `*.test.mjs` (run `node --test hooks/*.test.mjs`) |
 | Project template | `AGENTS.md` |
 | Mirror for other tools | `.agents/agents -> ../agents`, `.agents/skills -> ../skills` (relative symlinks) |
 

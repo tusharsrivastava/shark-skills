@@ -67,7 +67,7 @@ Read only the build and configuration files. Each value that you find is a sugge
 | `gate:fast` | The fast checks of CI: lint, type check, unit tests. Not the integration tests. |
 | `gate:full` | All the CI jobs, with the integration tests |
 | Architecture rules | An import-linter, dependency-cruiser, ESLint `no-restricted-imports` or depguard configuration; the top-level source folders |
-| Secrets | `.env.example`, `.gitignore` rules for env files, the loader (docker compose `env_file`, direnv, a settings module) |
+| Secrets | `.env.example`, `.gitignore` rules for env files, the loader (docker compose `env_file`, direnv, a settings module). Write "Enforced by: the shark hook `deny-secrets`", unless the project has its own hook. The hook always allows example files (`*.example`, `*.sample`, `*.template`), so agents can read the setting names. |
 | Docs layout | The `docs/` tree, a decisions log, a handoff file |
 | Invariants | Do not guess. Suggest the template examples that fit the code (for example "Money" when the code has prices), and ask. |
 | Owner rules | Do not guess. Suggest the template defaults ("Push only when the owner asks", the 10-minute rule for long checks). |
@@ -179,7 +179,8 @@ Report in ASD-STE100: outcome first. Name:
 - each value that is a suggestion and that the user did not confirm;
 - the next steps for the user:
   - start a new session, so that Claude Code reads the new project file and the output style;
-  - add a hook that blocks access to the files of `## Secrets` (the kit does not install one);
+  - check the two lists in `## Secrets`: the `deny-secrets` hook of the kit reads them and refuses tool calls on those
+    files;
   - add `.claude/mcp-debugger.log` to `.gitignore` (`shark:gitignore` can do this).
 
 Do not commit the files.

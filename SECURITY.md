@@ -41,7 +41,8 @@ advisory names you if you agree.
 
 ## Good practice for users
 
-- The kit does not install a hook that blocks access to secret files. Add one for the files in the `## Secrets`
-  section of your `AGENTS.md`.
+- The `deny-secrets` hook refuses tool calls on the files in the `## Secrets` section of your project file. It is a
+  guard against mistakes, not a sandbox: a command can still read a file whose name it does not write out (for example
+  a script that opens `.env` itself). Keep real production secrets out of the working tree.
 - Give unattended background agents only the tools that you allow-list.
 - `.mcp.json` pins the `mcp-debugger` version. The pin covers the top package only, not its dependencies.
