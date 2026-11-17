@@ -1,6 +1,6 @@
 ---
-type: "tool_used"
-tool: "Bash"
-input_match: "cat \\.env\\.example"
-min: 1
+type: "regex"
+target: "trace"
+match: "contains"
+pattern: "DB_PASS="
 ---

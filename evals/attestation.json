@@ -1,12 +1,52 @@
 {
-  "fingerprint": "sha256:4ceb7bfe8d0ee54cb627bc968c7350cc178e3e1e60f866af54b7aa48966e3c74",
-  "files": 136,
-  "ranAt": "2026-11-17T13:24:11.153Z",
+  "fingerprint": "sha256:3601c39abb65ef76dbf0213ad0cb3bec611e17dbc2d3d7d4a12fc0fe60ee42a2",
+  "files": 135,
+  "ranAt": "2026-11-17T13:51:40.475Z",
   "claudeVersion": "2.1.326",
-  "costUsd": 0.62,
-  "casesPassed": 4,
-  "casesTotal": 4,
+  "costUsd": 1.19,
+  "casesPassed": 8,
+  "casesTotal": 8,
   "cases": [
+    {
+      "name": "fix-no-comments",
+      "tags": [
+        "bash",
+        "comments"
+      ],
+      "runs": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "init-fresh",
+      "tags": [
+        "bash",
+        "init"
+      ],
+      "runs": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "init-keeps-settings",
+      "tags": [
+        "bash",
+        "init"
+      ],
+      "runs": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "secrets-hook-bash",
+      "tags": [
+        "bash",
+        "secrets"
+      ],
+      "runs": 1,
+      "score": 1,
+      "passed": true
+    },
     {
       "name": "secrets-hook-read",
       "tags": [

@@ -8,8 +8,8 @@ import { fileURLToPath } from "node:url";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const ATTESTATION = "evals/attestation.json";
 const INPUTS = ["agents", "skills", "output-styles", "hooks", ".claude-plugin", ".mcp.json", "AGENTS.md", "evals"];
-const EXCLUDED = [/^evals\/results\//, /^evals\/attestation\.json$/, /^evals\/README\.md$/];
-const REQUIRED_TAGS = ["local"];
+const EXCLUDED = [/^evals\/results\//, /^evals\/attestation\.json$/, /^evals\/README\.md$/, /^evals\/docker\//];
+const REQUIRED_TAGS = ["local", "bash"];
 
 export function inputFiles(root = ROOT) {
   const listed = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z", "--", ...INPUTS], {

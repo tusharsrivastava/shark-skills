@@ -1,6 +1,7 @@
 ---
-type: "regex"
-target: {"source": "file", "path": ".claude/settings.json"}
-match: "contains"
-pattern: "\"Bash\\(ls:\\*\\)\"[\\s\\S]*\"Bash\\(git status:\\*\\)\""
+type: "tool_used"
+tool: "Write"
+input_match: "\\.claude/settings\\.json"
+min: 0
+max: 0
 ---
