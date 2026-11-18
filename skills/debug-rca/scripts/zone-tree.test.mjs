@@ -30,13 +30,18 @@ function repo() {
 const run = (dir, ...args) => spawnSync(process.execPath, [SCRIPT, ...args, "--root", dir], { encoding: "utf8" });
 
 describe("zone-tree", () => {
-  test("create copies the repository with its dependencies and uncommitted files", () => {
+  test("create copies the repository, or makes a worktree where the file system has no copy-on-write", () => {
     const dir = repo();
     const r = run(dir, "create", "Z1");
     assert.equal(r.status, 0, r.stderr);
     const path = /^path: (.+)$/m.exec(r.stdout)[1];
-    assert.ok(existsSync(join(path, "node_modules/dep.js")));
-    assert.ok(existsSync(join(path, "notes.md")));
+    if (/copy-on-write copy/.test(r.stdout)) {
+      assert.ok(existsSync(join(path, "node_modules/dep.js")));
+      assert.ok(existsSync(join(path, "notes.md")));
+    } else {
+      assert.match(r.stdout, /git worktree \(run the project setup in it\)/);
+      assert.ok(existsSync(join(path, "app.js")));
+    }
     assert.equal(existsSync(join(path, ".shark-zones")), false);
     const status = spawnSync("git", ["status", "--porcelain"], { cwd: dir, encoding: "utf8" }).stdout;
     assert.doesNotMatch(status, /shark-zones/);
