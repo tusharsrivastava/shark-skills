@@ -25,6 +25,13 @@ the debugger recipes.
 | failing scenarios or evaluation cards, "classify the failures" | `shark:debug-rca` (read the saved run files before any replay) and, if the brief names it, `shark:goal-loop` (the failure classes) | the run files first; an offline replay with fakes |
 | "is this rule lost?", a port-audit group | `shark:port-audit`, if the brief names it | one row for each rule (ported, gap, removed on purpose, unsure) with evidence against the reference branch |
 
+## Modes
+
+The brief names your mode (`shark:debug-rca` › Modes). **Single** (the default): the whole method and the closed
+spec. **Zone**: one property and one axis of a defect, in your own tree (`.shark-zones/<zone id>`), and the zone
+report of `references/zones.md`. **Merge**: the zone reports, combined into one RCA with a closed spec. In zone mode,
+work and run tests only in your tree.
+
 ## Brief rules that you expect
 
 - The brief gives a timebox. You get one automatic grace of 20 % to finish the step in progress, not to start new
@@ -41,7 +48,10 @@ the debugger recipes.
 
 1. Load `shark:debug-rca` **first**, and follow it: the symptom map, then for each row reproduce, hypothesis,
    observe, bisect the state, confirm by prediction, root cause versus proximate cause; then the variant matrix, the
-   twin search and the adjacent rules, until its completeness gate passes. A first confirmed cause is not the end. Use its launch recipe for the test
+   twin search and the adjacent rules, until its completeness gate passes. Then close the spec with
+   `shark:solution-spec`: each behaviour decision of the fix is a row with a test. Write the RCA file from the template and
+   run `rca-gate.mjs check` and `rca-gate.mjs run --phase before` (in `shark:debug-rca`); hand off only when both
+   exit with 0, and put their output in the report. A first confirmed cause is not the end. Use its launch recipe for the test
    runner of the project (for example Python: pytest under debugpy; JS: node with `--inspect`; Go: dlv). Do not
    invent a different launch method.
 2. Read the project's AGENTS.md (or CLAUDE.md), and the handbook chapter for the area (AGENTS.md › Docs layout),
@@ -50,7 +60,8 @@ the debugger recipes.
 3. The mcp-debugger tools come from the kit (its `.mcp.json`). They can be deferred: find them with the tool search
    (search `mcp-debugger`) before the first call. Use them by function: create a debug session, set a breakpoint
    (with an absolute file path, by statement text or by function name), start the program, read the stack and the
-   variables, step or continue, read the output, and close the session.
+   variables, step or continue, read the output, and close the session. To attach to a test runner, start it with
+   `debuggee.mjs start` and stop it with `debuggee.mjs stop` (in `shark:debug-rca`).
 4. Run every command through the project's environment, as AGENTS.md › Commands gives it. Never use a global
    interpreter or a global tool.
 
@@ -82,7 +93,7 @@ Write it as a spec:
 - one part for each cause;
 - the regression tests, by name, which must pass after the fix, and the guard tests, which must keep passing;
 - the obvious or narrower fix that you rejected, and the symptom it leaves or the adjacent rule it breaks;
-- what the fix must not change: callers and adjacent rules that depend on the current behaviour.
+- what the fix must not change: the guard rows and the guard-kind behaviour rows of the closed spec, each with its test.
 
 Leave the implementation decisions to the writer. If you saw a decision that matters, state the constraint that
 decides it. Do not state the line to type.

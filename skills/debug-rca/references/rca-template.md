@@ -16,6 +16,27 @@ $ <the project's `test` command> <path to the test file>
 FAILED test_retry_handler::test_message_runs_once - assert 2 == 1
 ```
 
+## Properties
+
+From the operator's step 1 (`references/zones.md` § 1). Each property, and its causes or the tests that show that it
+holds.
+
+| # | Observation | Property | Zones | Causes, or the tests that show that it holds |
+| --- | --- | --- | --- | --- |
+| P1 | <what the report says> | <the rule that it breaks> | Z1, Z2 | C1 |
+| D-ISO | default | <scope isolation, for this area> | Z3 | <C…, or the tests that show that it holds> |
+| D-GUARD | default | <guard preservation, for this area> | Z4 | <…> |
+| D-TWIN | default | <twin equivalence, for this area> | Z5 | <…> |
+| D-INPUT | default | <input forms, for this area> | Z2 | <…> |
+
+## Rounds
+
+| Round | Zones | Trigger | Status |
+| --- | --- | --- | --- |
+| 1 | Z1 to Z4 | | done |
+
+A single-zone investigation writes one row: `| 1 | Z1 | | done |`.
+
 ## Symptom map
 
 | # | Symptom (as reported or found) | Path and data | Cause | Failing test |
@@ -64,6 +85,11 @@ handler failure claims again"_. It did.
 | Axis | Value | Cause | Test, or "not applicable" and why |
 | --- | --- | --- | --- |
 | Twin path | global | C1 | `<test name>` |
+| Scope | all locales | C1 | `<test name>` |
+| Actor | denied by field access | C1 | `<test name>` |
+| Value shape | cleared to an empty list | C1 | not applicable: the field has no list type, see `grep -n "type: 'array'" <config file>` |
+
+The Scope and Actor rows are required. "Not applicable" on them needs the search command in backticks.
 
 ## Twins and history
 
@@ -76,6 +102,35 @@ found. A root cause found once usually acts in more than one place.
 | --- | --- | --- | --- |
 | <a status change needs status access> | `docs/spec.md` | <draft all locales without the access check> | `<test name>` |
 
+## Guards on the path
+
+From `shark:solution-spec`, step 1. Each condition that can stop or limit the fix, and what the fix does when it
+fires.
+
+| # | Guard | Location | When it fires | The new behaviour when it fires | Test |
+| --- | --- | --- | --- | --- | --- |
+| G1 | <access check> | `<file:line>` | <the actor cannot …> | <writes nothing> | `<test name>` |
+
+## Behaviour table
+
+From `shark:solution-spec`, steps 2 to 4. One row for each guard, input class and operation that the fix can reach.
+
+| # | Condition | Expected outcome | Test | Kind |
+| --- | --- | --- | --- | --- |
+| B1 | <operation, scope, input> | <what a caller observes> | `<test name>` | regression / guard |
+
+## Decisions
+
+| # | Question | Decision | Reason | Status |
+| --- | --- | --- | --- | --- |
+| D1 | <a behaviour question that the report does not decide> | <the decision> | <why> | taken by default, owner to confirm |
+
+## Adversarial check
+
+| Simplest patch | What it breaks | Row added |
+| --- | --- | --- |
+| <the cheapest patch that passes the tests> | <the row or rule that it breaks> | <B…> |
+
 ## Fix spec
 
 The input of `shark:code-writer`. Write behaviour, not a patch.
@@ -83,12 +138,13 @@ The input of `shark:code-writer`. Write behaviour, not a patch.
 - **After the fix:** <what must be true, as behaviour>.
 - **Files:** `<file>` (<why>); `<file>` (<why>).
 - **Causes:** one part for each cause, C1, C2, …, each with the parts below.
-- **Regression tests:** `<test file>` › `<test name>`, one for each cause and variant. They fail now and must pass
-  after the fix.
-- **Guard tests:** `<test file>` › `<test name>`, one for each adjacent rule. They pass now and must still pass.
+- **Regression tests:** one for each cause and variant. They fail now and must pass after the fix.
+  - `<test file>` › `<test name>`
+- **Guard tests:** one for each adjacent rule. They pass now and must still pass.
+  - `<test file>` › `<test name>`
 - **Rejected:** <the obvious or narrower fix, and the symptom that it leaves or the adjacent rule that it breaks>.
   The next person will think of it too.
-- **Must not change:** <the callers or the behaviour that depend on the current code>.
+- **Must not change:** the guard rows and the behaviour rows of kind `guard` (G1, B2, …).
 - **Constraints:** <a decision that matters, as a constraint: "the claim and the effect commit in one unit of
   work">.
 - **Spec or decision:** <the spec rule or the decision that the fix changes, with its path in the project's

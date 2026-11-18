@@ -38,9 +38,10 @@ answer for the rest of the session. Do not ask again.
 
 | Work | Agent | Skill that the agent loads |
 | --- | --- | --- |
-| Production code, tests, migrations, configuration | `shark:code-writer` | `shark:system-design`, `shark:commit-blocks` |
+| A closed spec for a build or a round of lanes | the operator, `shark:architect` or `shark:lead-engineer` | `shark:solution-spec` |
+| Production code, tests, migrations, configuration | `shark:code-writer` | `shark:code-authoring`, `shark:system-design`, `shark:commit-blocks` |
 | A defect: root cause, failing test, Fix spec | `shark:code-debugger` | `shark:debug-rca` |
-| The merge of parallel lanes or patches | `shark:lead-engineer` | `shark:lead-merge`, `shark:merge-audit`, `shark:commit-blocks` |
+| The merge of parallel lanes or patches | `shark:lead-engineer` | `shark:code-authoring`, `shark:lead-merge`, `shark:merge-audit`, `shark:commit-blocks` |
 | An architecture or design question, a design review | `shark:architect` | `shark:system-design` |
 | A diff that touches `## Invariants` (data isolation, money, events, jobs, idempotency, routes, permissions, raw queries, migrations, secrets) | `shark:invariant-guard` (read-only) | the catalogue of `shark:system-design` |
 | A spec, report, design note or runbook; docs that a change made wrong | `shark:doc-writer` | (output style only) |
@@ -51,6 +52,12 @@ Choose its model when you start it (the `model` option of the Agent tool). Its d
 when the question spans more than one service or module boundary, when it changes a data model, a contract or a
 money, tenant or permission rule, when the math has more than one step, or when an `opus` review left the cause
 open. `fable` costs more for each token, so say which condition applies in the brief.
+
+`shark:code-writer` runs on `sonnet` at medium effort, on a closed spec. A spec is closed when `spec-check.mjs` of
+`shark:solution-spec` exits with 0 (for an RCA, `rca-gate.mjs check` runs it). The strong model closes the spec;
+the fast model builds it. Ask for `opus` (the `model` option) only when the spec cannot be closed (a design that
+the writer must explore), or when a `sonnet` run broke a guard test or a baseline test. Say which condition
+applies in the brief.
 
 `shark:invariant-guard` runs on the orchestrated path only, on `sonnet` at medium effort. Ask for `opus` (the
 `model` option) when the diff changes a migration or a data model, a tenant-isolation or permission rule, or the

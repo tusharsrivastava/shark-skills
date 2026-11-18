@@ -211,6 +211,21 @@ the symptom. Two days later, the bug occurs again with a new stack trace.
 JS/TS, Go, Rust, Java, .NET, C/C++). It records the real values. It gives you three items: the root cause, a
 failing regression test, and a fix spec. Then `shark:code-writer` changes the production code.
 
+A bug report with one symptom takes the direct path: a failing test first, then the fix. A report with two or more
+symptoms, or a defect in twin code paths, gets more. The operator writes the properties that the report breaks,
+plus four default properties (scope isolation, guard preservation, twin equivalence, input forms). It splits them
+into zones, and one `shark:code-debugger` investigates each zone in parallel, in its own copy of the repository. A
+merge debugger combines the zones and closes the spec with [`/shark:solution-spec`](./skills/solution-spec/SKILL.md):
+each behaviour decision is a row with a test. Then a Sonnet `shark:code-writer` builds it. Scripts check each step:
+`rca-gate.mjs` refuses an RCA with an open cell or an open spec.
+
+A report with more than one symptom gets more. The operator writes the properties that the report breaks, and four
+default properties (scope isolation, guard preservation, twin equivalence, input forms). It splits them into zones,
+and one `shark:code-debugger` investigates each zone in parallel, in its own copy of the repository. A merge
+debugger combines the zones and closes the spec with [`/shark:solution-spec`](./skills/solution-spec/SKILL.md):
+each behaviour decision is a row with a test. Then a Sonnet `shark:code-writer` builds it. Scripts check each
+step: `rca-gate.mjs` refuses an RCA with an open cell or an open spec.
+
 [`/shark:debug-rca`](./skills/debug-rca/SKILL.md) contains the method. You can also use it yourself.
 
 ### #4: One Giant Commit At The End
@@ -283,6 +298,14 @@ production-scale systems, distilled into this setup.
   deleted them.
 - **[/shark:commit-blocks](./skills/commit-blocks/SKILL.md)**: Split a working tree into conventional commits that
   each pass the gate.
+- **[/shark:code-authoring](./skills/code-authoring/SKILL.md)**: The writing rules of `code-writer` and
+  `lead-engineer`: regression safety with a test baseline, scope, test first, logging, comments.
+- **[/shark:solution-spec](./skills/solution-spec/SKILL.md)**: Close a spec before a Sonnet writer builds it: the
+  guards on the path, a behaviour table with a test for each row, the decisions, an adversarial check.
+- **[/shark:code-authoring](./skills/code-authoring/SKILL.md)**: The writing rules of `code-writer` and
+  `lead-engineer`: regression safety with a test baseline, scope, test first, logging, comments.
+- **[/shark:solution-spec](./skills/solution-spec/SKILL.md)**: Close a spec before a Sonnet writer builds it: the
+  guards on the path, a behaviour table with a test for each row, the decisions, an adversarial check.
 
 **Agents**
 

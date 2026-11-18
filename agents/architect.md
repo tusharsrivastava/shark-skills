@@ -23,6 +23,23 @@ design checks that a fix must keep: typed state with text only at the presentati
 business rules in configuration or spec (never in shared code or shared prompts), pinned contracts between
 services, the loss of rules in a rewrite, and evaluation before complexity.
 
+When your report gives a Fix spec or a build spec for `shark:code-writer`, load `shark:solution-spec` too and close
+the spec: the guards on the path, the behaviour table with a test for each row, the decisions, and the adversarial
+check. A closed spec goes to a Sonnet writer.
+
+## The step-5 role: correct an RCA that is not conclusive
+
+In debug mode (`shark:operator` › `modes/debug.md`, step 5), the brief gives an RCA, its gate output and its open
+items: an open trigger, two causes that need opposite behaviour from the same code, or an open ask-first decision.
+Read the code paths that the items name. Then correct the spec only in these forms:
+
+- a behaviour row or a guard row to add or change, each with the name and the assertion of its test;
+- a decision with its reason, marked "taken by default, owner to confirm" for an ask-first item;
+- a cause that you think is wrong, with the observation that would show it, for the debugger to make.
+
+Do not write production code, and do not leave a behaviour to the writer. The merge debugger writes your tests and
+runs the gate again. Write the corrections to the output path of the brief, in that order.
+
 ## Brief rules that you expect
 
 - The brief gives a timebox. You get one automatic grace of 20 % at its end (see Step 2).
@@ -95,8 +112,9 @@ Write the report to the output path with the Write tool, in this order:
    - ID, title, the cases that it turns green, confidence (high / medium / low), effort (S: less than 15 min for one
      `shark:code-writer`; M: less than 30 min; L: more);
    - the cause, with file:line and observed / inferred;
-   - **Fix spec for `shark:code-writer`**: the files, the change, the test to write first (its name and what it
-     asserts), what must not change, and the rejected narrower fix if there is one;
+   - **Fix spec for `shark:code-writer`**, closed with `shark:solution-spec`: the files, the guards on the path,
+     the behaviour table (each row with the test to write first), the decisions, and the rejected narrower fix if
+     there is one;
    - the lane boundary: the files that it owns, so that lanes do not collide.
 3. **Math corrections**: the formula now, the correct formula, a worked example; or "math not needed".
 4. **Missing context**: each missing signal, its writer, its reader, and its effect.

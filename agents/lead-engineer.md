@@ -16,6 +16,8 @@ vs inferred labels, full file paths.
 
 | Your brief says | Load | It gives you |
 |---|---|---|
+| you write the specs for a round of `shark:code-writer` lanes | `shark:solution-spec` | a closed spec for each lane: guards on the path, a behaviour table with a test for each row, the decisions, the adversarial check |
+| always, before you correct or clean up code | `shark:code-authoring` | regression safety with a test baseline, scope, test first, introspectability, logging, comments |
 | merge patches as they arrive, a queue file, an integration branch, "validate the port" | `shark:lead-merge` | the queue file as the source of truth (restart from it), batches, conflicts from the notes of both sides, one combined run for each batch, one snapshot mapping and re-record at validation, worktree cleanup |
 | merge the lanes of a round (a round contract) | `shark:lead-merge` and this file | the round-contract checks (Job 1), the blocker table |
 | review a merge, "audit the merge", before you move the integration branch | `shark:merge-audit` | a review of each merge against the contract and the invariants |
@@ -103,7 +105,7 @@ needs a file of another group stops at the seam and reports it to the final lead
    docs pass updates them).
 8. **Comments.** Do not add comments, and remove the explanation comments that the lanes added in this round.
    - A documentation comment (the doc comment of a module, a class, a function or a public API) is allowed. It
-     follows the ASD-STE100 documentation format of `shark:code-writer` › Comments: a description sentence (20
+     follows the ASD-STE100 documentation format of `shark:code-authoring` › Comments: a description sentence (20
      words or fewer, present tense, active voice), the parameters, the return value, the errors that a caller must
      handle, and one usage example. It tells how to use the item, not how the item works. Remove the algorithm
      notes, the history, the notes in brackets and the line-by-line text that a lane put in a doc comment.

@@ -29,6 +29,19 @@ Read the project's `AGENTS.md` (or `CLAUDE.md`) first. This skill uses these sec
 
 If a section is missing, ask the user once. Suggest adding it to `AGENTS.md`.
 
+## Modes: single, zone and merge
+
+The brief names the mode. The method below applies to each mode.
+
+| Mode | The brief gives | You do | You return |
+| --- | --- | --- | --- |
+| single (default) | the report | the whole method, then the closed spec | the RCA file |
+| zone | the report, one property, one axis, its cells, your tree | the loop for the cells of your zone, a test for each cell | the zone report of [`references/zones.md`](references/zones.md) § 4 |
+| merge | the zone reports and their trees | combine the zones, write the RCA with the Properties and Rounds tables, close the spec | the RCA file, and the triggers for round 2 |
+
+In zone mode, report each value that no confirmed cause explains, also outside your zone. Do not close the spec in
+zone mode.
+
 ## Completeness: one cause is not the end
 
 A real defect often has more than one cause, and the obvious fix often breaks a rule next to it. An investigation
@@ -54,7 +67,7 @@ steps prevent that. They frame the whole investigation; the debugger loop below 
 
    | Axis | Values to check |
    | --- | --- |
-   | Twin paths | collection and global, list and search, single and bulk, sync and async, web and POS, create and update |
+   | Twin paths | collection and global, list and search, single and bulk, sync and async, web and POS (when each has its own code), create and update |
    | Operation | create, update, draft save, publish, unpublish, delete, read after write, read in another scope |
    | Value shape | set, change, clear (`null`, empty list, empty string, `0`, `false`), nested child of an array or a block |
    | Scope | one locale, tenant or key, and all of them; another locale, tenant or key |
@@ -74,6 +87,28 @@ steps prevent that. They frame the whole investigation; the debugger loop below 
 **The completeness gate.** The investigation ends only when each symptom row has a confirmed cause and a failing
 test, each applicable matrix cell has a test, the twin search is done, and each adjacent rule has a guard test.
 Until then, the RCA status stays "investigating", also when one cause is confirmed.
+
+**Close the spec before the hand-off.** Load `shark:solution-spec` and do its method on the fix: the guards on
+the path, the input classes, the operations on the state, the behaviour table, the decisions and the adversarial
+check. Each row gets a test; write the tests that are missing. A closed spec lets a fast writer build the fix with
+no behaviour decision of its own.
+
+**A script checks the gate.** Write the RCA file from the template, then run both commands. The gate passes only
+when both exit with 0. Do not hand off with a failed gate: fix the RCA or write the missing tests.
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT:-<directory of this skill>/../..}/skills/debug-rca/scripts/rca-gate.mjs" check <rca.md>
+node "${CLAUDE_PLUGIN_ROOT:-<directory of this skill>/../..}/skills/debug-rca/scripts/rca-gate.mjs" run <rca.md> --phase before \
+  --cmd '<the project test command with {files}, writing a JUnit report to {junit}>'
+```
+
+- `check` finds a symptom with no cause or no test, a matrix cell with no test and no reason, a missing Scope or
+  Actor row, a "not applicable" on those axes with no search command, an open-cell phrase ("not tested", "cut for
+  time", "inferred: same path", "I read this in the code"), and a test that the Fix spec does not list or that is
+  not in its file.
+- `run` runs the Fix spec tests: each regression test must fail now, and each guard test must pass. The command
+  must write JUnit XML: Vitest `--reporter=junit --outputFile={junit}`, Jest `jest-junit`, pytest
+  `--junitxml={junit}`.
 
 ## Before you start the debugger
 
@@ -194,14 +229,21 @@ The general recipe, for each language:
    secret value into a launch configuration: the project loads secrets at runtime (`## Secrets`).
 
 6. **Reach the code that runs the test.** If the runner runs tests in worker processes or threads, a launched
-   session can stay in the main process, and its breakpoints stay "Unbound". Then start the runner yourself with its
-   own inspector or listener option, and attach the session to that port.
+   session can stay in the main process, and its breakpoints stay "Unbound". Then start the runner with its own
+   inspector or listener option, and attach the session to that port. The script `debuggee.mjs` does this: it picks
+   a free port, starts the command in the background, waits until the port is open, and prints the port, the log
+   and the notes for attach mode. Logpoint messages go to that log.
+
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT:-<directory of this skill>/../..}/skills/debug-rca/scripts/debuggee.mjs" start --cmd '<runner command with {port} in its inspector option>'
+   node "${CLAUDE_PLUGIN_ROOT:-<directory of this skill>/../..}/skills/debug-rca/scripts/debuggee.mjs" log <id> --grep <logpoint text>
+   node "${CLAUDE_PLUGIN_ROOT:-<directory of this skill>/../..}/skills/debug-rca/scripts/debuggee.mjs" stop <id>
+   ```
 7. **Check what you attached to.** The first output line shows the interpreter that runs. A session can ignore
    `executablePath` and use the interpreter on the `PATH`.
-8. **A breakpoint that stays unbound after its module loads is a finding, not a dead end.** A runner that
-   transforms modules can hide the source from the adapter. Change the instrument: a probe test with a precise
-   assertion that prints the value, or a temporary log line that you delete before you finish. The value is still
-   observed.
+8. **Check that a file binds before you depend on it.** Set one logpoint in the file, run, and read the log. If
+   the code ran and the log has no message, the file does not bind: move to a caller or a callee that binds, or use
+   a probe test with a precise assertion that prints the value. The value is still observed.
 
 The recipe for each language, with what earlier sessions observed:
 
@@ -320,7 +362,9 @@ so the debugger does not change during an investigation.
 
 Write it only after an observation confirmed the hypothesis. The template is `references/rca-template.md` in this
 skill folder (`${CLAUDE_PLUGIN_ROOT}/skills/debug-rca/references/rca-template.md`). Find it relative to this
-skill, never with a fixed path. Write it as a Markdown file, and give its full path.
+skill, never with a fixed path. Write it as a Markdown file with the section names of the template, and give its
+full path: the gate script reads the file, not your report. In the Fix spec, give each test as
+`` `<test file>` › `<test name>` ``, one on each line.
 
 The section that gives the document its value is **Evidence**: actual observed values at named locations. An RCA
 without observed values is a hypothesis with formatting, and the next person cannot tell the difference.
@@ -343,7 +387,8 @@ cause analysis that does not end in a test is an essay.
 ## Finish (after the completeness gate)
 
 1. Close every debug session.
-2. Make sure that no debuggee that you started still runs (for example `pgrep -fl debugpy`, `pgrep -fl inspect`).
+2. Stop each debuggee that you started: `debuggee.mjs stop --all`. A debuggee that you started another way: check
+   with `pgrep -fl debugpy` or `pgrep -fl inspect`.
 3. Delete the probes. `git status` shows only the regression and guard tests.
 4. Run the project's `typecheck` with no paths, so that it uses the project configuration. A type checker on
    single files can give false import errors.
