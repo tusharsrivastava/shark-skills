@@ -69,6 +69,23 @@ did this change?". If the true answer has an "and" in it, split again.
 commit, you cannot tell if the rename or the new logic caused the bug, and the diff is too large to read. Rename
 in one commit. Change the behavior in the next commit.
 
+### Refactor or behavior: you label it, a check proves it
+
+You decide the reason of each hunk; no tool can read intent from the shape of a diff. Then prove the label of each
+`refactor:` commit mechanically:
+
+1. **The tests do not change.** Run `split-check.mjs refactor <commit>` (the script is next to this skill, in
+   `scripts/`). It fails when the commit changes a test file; a pure rename of a test file is allowed. Give the
+   project's test paths with `--tests <regex>` when they are not the usual ones (`tests/`, `*_test.go`,
+   `*.test.ts`, `test_*.py`).
+2. **The old tests pass.** The commit keeps the tests of its parent, so its gate run (below) runs the old tests
+   against the new structure. Green means no behavior that the tests see changed.
+3. **Moved code is only moved.** Read the diff with `git diff --color-moved=zebra <commit>~1 <commit>`: moved
+   blocks show in their own colors, and each line in the normal colors is a real change that needs a reason.
+
+If step 1 fails, the commit has a behavior change: move the test change, and the code that it tests, to a
+behavior commit.
+
 ## Order
 
 Later commits can depend on earlier commits. The reverse is a broken build.
@@ -115,6 +132,20 @@ that dependency to the commit, or change the order.
 **CAUTION:** Never use `git commit --no-verify`. The commit hooks (lint, secret scan, import contracts) are part
 of the check. If a hook fails, fix the cause.
 
+### Prove that the split lost nothing
+
+Before the first commit of a split, record the content of the whole change:
+
+```bash
+CHECK="${CLAUDE_PLUGIN_ROOT:-<directory of this skill>/../..}/skills/commit-blocks/scripts/split-check.mjs"
+SNAP="$(node "$CHECK" snapshot)"   # tracked and untracked files; the index does not change
+```
+
+After the last commit, `node "$CHECK" same "$SNAP"` must exit 0: HEAD
+then has exactly the content that you had before you split, line for line. A comparison of `--stat` output is not
+enough, because a changed line keeps the same counts. If the check fails, it prints the difference: find the lost
+or extra hunk before you go on.
+
 ### When one file belongs to two commits
 
 Interactive staging (`git add -p`) is not available to an agent. Stage a part of a file from a patch instead:
@@ -124,12 +155,29 @@ Interactive staging (`git add -p`) is not available to an agent. Stage a part of
 2. Stage the patch alone: `git apply --cached <patch file>`. The working tree is not touched.
 3. Check that the index is what you want (`git diff --cached`), verify it with the procedure above, and commit.
 4. Repeat for the next part. The last part is the rest of the file: `git add <path>`.
-5. At the end, `git status` must show a clean tree, and `git diff HEAD~<n> --stat` must equal the diff that you
-   had before you split. If it does not, a hunk is lost: find it before you go on.
+5. At the end, `git status` must show a clean tree, and `split-check.mjs same "$SNAP"` must exit 0 (see above).
 
 If you want to keep a copy of the whole change while you work, copy the changed files to a scratch folder first
 (or commit on a temporary branch). Never keep it in a stash. Run each step as its own command: in a chain, a
 failed step leaves later variables unset.
+
+### Split a commit after the fact
+
+A merge of parallel work can land as one commit with many reasons. Split it on its own branch before anyone
+builds on it:
+
+1. Check that nobody else has the commit: it is not pushed, or only on your own branch. Never rewrite a shared
+   branch, and never force push.
+2. Record the old commit: `OLD="$(git rev-parse HEAD)"`. The old commit is the snapshot: it keeps all the work,
+   so nothing can get lost while you split.
+3. `git reset --soft <base>`, then `git restore --staged .`. The whole change is now unstaged in the working tree.
+4. Split it with the steps above: one reason for each commit, each commit verified in a temporary worktree.
+5. `split-check.mjs same "$OLD"` must exit 0.
+
+`split-check.mjs wide <base>` lists the commits of a branch that change 6 or more files (`--max <n>` sets the
+limit; lock files and pure renames do not count). A wide commit is not always wrong, but it often has more than
+one reason. The shark hook `wide-commits` runs the same check before `gh pr create` and asks the user before the
+pull request opens.
 
 ## Verify the whole chain before you push
 
@@ -168,11 +216,12 @@ you cannot trust.
 
 1. **Each commit builds and passes the gate.** Verified, not assumed.
 2. **One reason for each commit.** An "and" in the why means another commit.
-3. **Never mix a refactor with a change of behavior.**
+3. **Never mix a refactor with a change of behavior.** Each `refactor:` commit passes `split-check.mjs refactor`.
 4. **Code and its tests ship together.** If the tests come in a later commit, bisect blames the wrong commit.
 5. **No commit depends on a later commit.**
-6. **Secrets and generated files never go into a commit.** Check what is staged, not only what changed. The
+6. **A split loses nothing.** `split-check.mjs same` against the snapshot, or against the old commit, exits 0.
+7. **Secrets and generated files never go into a commit.** Check what is staged, not only what changed. The
    files in `AGENTS.md`, section `## Secrets`, and the build output are ignored on purpose.
-7. **Never `git stash`, never `--no-verify`, never a force push.** Use a temporary worktree or a scratch copy.
-8. **Do not commit unless the user asked.** The split and the messages are the work. The user decides when
+8. **Never `git stash`, never `--no-verify`, never a force push.** Use a temporary worktree or a scratch copy.
+9. **Do not commit unless the user asked.** The split and the messages are the work. The user decides when
    `git commit` runs, unless they said otherwise. Push only when the user asks.

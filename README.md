@@ -242,7 +242,8 @@ cannot find the bad change.
 
 [`/shark:commit-blocks`](./skills/commit-blocks/SKILL.md) splits the working tree into conventional commits. Each
 commit has one reason. A refactor and a behaviour change never share a commit. A script checks that each commit
-passes the gate. Thus `git bisect` works on your history.
+passes the gate, that each `refactor:` commit keeps the tests, and that the split lost no line. Thus `git bisect`
+works on your history. A commit that already holds many reasons can be split after the fact.
 
 ### #5: Hours Spent Finding One Blocker At A Time
 
