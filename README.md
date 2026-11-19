@@ -351,6 +351,9 @@ production-scale systems, distilled into this setup.
 - **[deny-secrets hook](./hooks/deny-secrets.mjs)**: Refuses Read, Edit, Write, Grep and Bash calls on the secret
   files that your `## Secrets` section lists (`.env`, `*.pem` and similar by default). Example files
   (`.env.example` and similar) always stay readable, so agents still learn the setting names.
+- **[wide-commits hook](./hooks/wide-commits.mjs)**: Before `gh pr create`, asks you when a commit of the branch
+  changes 6 or more files (lock files and pure renames do not count). Set `SHARK_WIDE_COMMIT_FILES` to change the
+  limit, or to `0` to turn it off.
 - **[mcp-debugger](https://github.com/debugmcp/mcp-debugger)**: The MCP server behind `shark:code-debugger`. Real
   breakpoints, stepping and variable reads for Python, JS/TS, Go, Rust, Java, .NET and C/C++. It writes its log to
   `.claude/mcp-debugger.log`, so add that to your `.gitignore`.

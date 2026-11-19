@@ -1,5 +1,5 @@
 {
-  "description": "shark: refuse each tool call on the secret files that the project's ## Secrets section names",
+  "description": "shark: refuse each tool call on the secret files that the project's ## Secrets section names; ask before a pull request with a wide commit",
   "hooks": {
     "PreToolUse": [
       {
@@ -18,6 +18,16 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/deny-secrets.mjs\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/wide-commits.mjs\"",
             "timeout": 10
           }
         ]
