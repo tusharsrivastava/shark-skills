@@ -86,7 +86,9 @@ Report the defect after the fix: the defect, its regression test (failing, then 
 
 **Ask the user first** only in these cases (and the cases of `## Owner rules`):
 
-- Two behaviours are possible, and the spec, the code and the plan do not decide between them.
+- Two behaviours are possible, and the spec, the code and the plan do not decide between them. A report that lists
+  options and accepts each one has decided: take the option that changes the least runtime behaviour (a type-level
+  change before a runtime change), and say so.
 - The fix changes a business rule, or the default of a configurable setting.
 - The fix adds a permission, or changes the permission model.
 - The fix adds an external service or a runtime dependency.
