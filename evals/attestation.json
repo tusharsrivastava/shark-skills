@@ -1,11 +1,11 @@
 {
-  "fingerprint": "sha256:e6f026406ab1c80324daddc57172ffab31e1f382ac7247089a0509975712a7ca",
-  "files": 159,
-  "ranAt": "2026-11-19T12:07:41.683Z",
+  "fingerprint": "sha256:172279dfa4ee5fe3dbb51fd2bb77c9f5a7dfb01f6a1d7ec4da2b46a566d4963f",
+  "files": 169,
+  "ranAt": "2026-11-21T20:02:53.688Z",
   "claudeVersion": "2.1.326",
-  "costUsd": 2.75,
-  "casesPassed": 9,
-  "casesTotal": 9,
+  "costUsd": 2.92,
+  "casesPassed": 11,
+  "casesTotal": 11,
   "cases": [
     {
       "name": "debugger-rca",
@@ -52,6 +52,28 @@
       "passed": true
     },
     {
+      "name": "operator-route-one-cause",
+      "tags": [
+        "bash",
+        "routing"
+      ],
+      "runs": 1,
+      "runsPassed": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "operator-route-two-causes",
+      "tags": [
+        "bash",
+        "routing"
+      ],
+      "runs": 1,
+      "runsPassed": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
       "name": "secrets-hook-bash",
       "tags": [
         "bash",
@@ -91,8 +113,8 @@
         "style"
       ],
       "runs": 3,
-      "runsPassed": 3,
-      "score": 1,
+      "runsPassed": 2,
+      "score": 0.933,
       "passed": true
     },
     {
@@ -103,8 +125,8 @@
         "style"
       ],
       "runs": 3,
-      "runsPassed": 2,
-      "score": 0.944,
+      "runsPassed": 3,
+      "score": 1,
       "passed": true
     }
   ]

@@ -1,6 +1,6 @@
 {
   "name": "shark",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "General-purpose engineering orchestration kit: an operator harness, parallel build/merge/audit workflows, root-cause debugging, system design, docs in ASD-STE100, and the subagents that run them.",
   "author": {
     "name": "Tushar Srivastava",
