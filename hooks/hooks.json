@@ -1,5 +1,5 @@
 {
-  "description": "shark: refuse each tool call on the secret files that the project's ## Secrets section names; ask before a pull request with a wide commit",
+  "description": "shark: refuse each tool call on the secret files that the project's ## Secrets section names; ask before a pull request with a wide commit; report new code-health findings after an edit",
   "hooks": {
     "PreToolUse": [
       {
@@ -29,6 +29,25 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/wide-commits.mjs\"",
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/health-edit.mjs\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/health-edit.mjs\" --async",
+            "async": true,
+            "asyncRewake": true,
+            "timeout": 30
           }
         ]
       }
