@@ -1,0 +1,82 @@
+# shark:code-health starter rules for JavaScript and TypeScript. Written for shark (MIT); not copied from any rule
+# registry. Each message ends with "Fix: ..." so that the digest can show the fix hint.
+rules:
+  - id: sec-sql-string-concat
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      SQL text built from a value at run time (concatenation or a template literal with a value) and passed to a
+      query call. Fix: use a bound parameter, for example query("... WHERE id = $1", [value]).
+    metadata:
+      invariant: injection
+      category: security
+    patterns:
+      - pattern-either:
+          - pattern: $DB.$Q($A + $B, ...)
+          - pattern: $DB.$Q(`...${$X}...`, ...)
+      - metavariable-regex:
+          metavariable: $Q
+          regex: ^(query|execute|raw|prepare|\$queryRawUnsafe|\$executeRawUnsafe)$
+
+  - id: sec-eval-input
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      eval, new Function or a string timer runs text that is not a constant.
+      Fix: parse the value (JSON.parse, Number) or dispatch through a map of allowed handlers.
+    metadata:
+      invariant: injection
+      category: security
+    patterns:
+      - pattern-either:
+          - pattern: eval($X)
+          - pattern: new Function(..., $X)
+          - pattern: setTimeout($A + $B, ...)
+          - pattern: setTimeout(`...${$X}...`, ...)
+          - pattern: setInterval($A + $B, ...)
+          - pattern: setInterval(`...${$X}...`, ...)
+      - pattern-not: eval("...")
+      - pattern-not: new Function(..., "...")
+
+  - id: sec-shell-injection
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      child_process exec runs a command string that is built at run time.
+      Fix: use execFile or spawn with the arguments as an array, without a shell.
+    metadata:
+      invariant: injection
+      category: security
+    pattern-either:
+      - pattern: $CP.exec($A + $B, ...)
+      - pattern: $CP.exec(`...${$X}...`, ...)
+      - pattern: $CP.execSync($A + $B, ...)
+      - pattern: $CP.execSync(`...${$X}...`, ...)
+
+  - id: sec-html-injection
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      HTML is written from a value that is not a constant (innerHTML, outerHTML, document.write).
+      Fix: set textContent, or sanitize with the project's HTML sanitizer.
+    metadata:
+      category: security
+    patterns:
+      - pattern-either:
+          - pattern: $E.innerHTML = $X
+          - pattern: $E.outerHTML = $X
+          - pattern: document.write($X)
+      - pattern-not: $E.innerHTML = "..."
+      - pattern-not: $E.outerHTML = "..."
+      - pattern-not: document.write("...")
+
+  - id: sec-tls-verify-off
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      TLS certificate checks are turned off (rejectUnauthorized: false).
+      Fix: keep the check on; give the CA with the `ca` option if the server uses a private CA.
+    metadata:
+      category: security
+    pattern: |
+      { ..., rejectUnauthorized: false, ... }
