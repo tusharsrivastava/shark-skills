@@ -17,6 +17,43 @@ for extra in "$@"; do
       mkdir -p .claude
       printf '{\n  "permissions": {\n    "allow": ["Bash(ls:*)", "Bash(git status:*)"]\n  },\n  "outputStyle": "Explanatory"\n}\n' > .claude/settings.json
       ;;
+    code-health|code-health-missing|code-health-sync)
+      # A project that opted in to shark:code-health, with one legacy finding (an f-string query) that the
+      # digest must never show. code-health-missing names an analyzer that is not installed; code-health-sync sets
+      # hook.edit to on (the check runs before the next step).
+      og="opengrep"; [ "$extra" = code-health-missing ] && og="opengrep-not-installed"
+      mkdir -p .shark/rules
+      cp "$here/../../skills/code-health/rules/"*.yaml .shark/rules/
+      cat > AGENTS.md <<AGENTS
+# AGENTS.md: billing-mini
+
+## Commands
+
+| Key | Command | Limit or note |
+| --- | --- | --- |
+| \`gate:fast\` | \`python3 -m pytest -q\` | |
+| \`test <paths>\` | \`python3 -m pytest -q <paths>\` | |
+| \`analyze:file\` | \`$og scan --quiet --disable-version-check -f .shark/rules --sarif-output={out} {file}\` and \`lizard --csv {file}\` | Under 2 s on one file. |
+AGENTS
+      if [ "$extra" = code-health-sync ]; then
+        printf '\n## Quality budgets\n\n| Key | Default | Meaning |\n| --- | --- | --- |\n| `hook.edit` | `on` | |\n' >> AGENTS.md
+      fi
+      cat > src/billing/db.py <<'PY'
+import sqlite3
+
+
+def connect(path=":memory:"):
+    conn = sqlite3.connect(path)
+    conn.execute("CREATE TABLE IF NOT EXISTS invoices (id INTEGER PRIMARY KEY, customer_id TEXT, total REAL)")
+    conn.execute("CREATE TABLE IF NOT EXISTS customers (id TEXT PRIMARY KEY, name TEXT)")
+    return conn
+
+
+def find_invoice(conn, invoice_id):
+    # legacy code: kept as it is until the billing rewrite
+    return conn.execute(f"SELECT * FROM invoices WHERE id = {invoice_id}").fetchone()
+PY
+      ;;
     *) echo "unknown extra: $extra" >&2; exit 1 ;;
   esac
 done
