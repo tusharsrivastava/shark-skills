@@ -35,6 +35,10 @@ one time and recommends to add the section here.
 | `run` | `<command>` | Starts the full local stack. |
 | `test-db:copy` | `<command>` or none | Optional. Copies a migrated template test database. |
 | `bench` | `<command>` or none | Optional. The costly end-to-end measurement. |
+| `analyze:file` | `<command>` or none | Optional (`shark:code-health`). Takes `{file}`; writes SARIF or Lizard output to stdout or `{out}`. Under 2 s on one file. |
+| `analyze:diff` | `<command>` or none | Optional. Takes `{base}`; scans the changed files. With none, shark runs `analyze:file` on each changed file. |
+| `arch:check` | `<command>` or none | Optional. The whole repository; SARIF to `{out}`. Checks `## Architecture rules`. |
+| `analyze:full` | `<command>` or none | Optional. The whole repository, for CI and SonarQube. |
 
 Examples by stack:
 
@@ -44,6 +48,7 @@ Examples by stack:
 | `test <paths>` | `pytest <paths> --reuse-db` | `vitest run <paths>` | `go test <packages>` |
 | `typecheck` | `mypy src tests` | `tsc --noEmit -p .` | `go vet ./...` |
 | `test-db:copy` | `psql -c "CREATE DATABASE <name> TEMPLATE <template>"` (Postgres) | same (Postgres); copy the file (SQLite) | same (Postgres) |
+| `analyze:file` | `opengrep scan --quiet --disable-version-check -f .shark/rules --sarif-output={out} {file}` and `lizard --csv {file}` | same | same |
 
 ## Invariants
 
@@ -78,6 +83,22 @@ Examples (keep the ones that apply):
 - Enforced by: `<tool>` in `gate:fast`. Python: `import-linter`. JS/TS: `dependency-cruiser` or ESLint
   `no-restricted-imports`. Go: `internal/` packages and `depguard`.
 - Production code paths (`shark:code-writer` only): `<src/>, <tests/>, <migrations/>, <config/>`.
+
+## Quality budgets
+
+> Optional. The limits of `shark:code-health`. Without this section, the defaults below apply. Delete the section if
+> the project has no `analyze:*` row.
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `ccn.warn` | 10 | A new or changed function with a cyclomatic complexity above this gets a warning. |
+| `ccn.block` | 20 | Above this, the finding is an error, and `shark:lead-engineer` refuses the merge unless the brief allows it. |
+| `ccn.no_increase_over` | 10 | An edit that raises the complexity of a function that is already above this is always reported. |
+| `nloc.warn` | 60 | Function length in lines that are not comments. |
+| `params.warn` | 5 | Parameter count. |
+| `security.block` | `error` | The SARIF level of a security finding that blocks the merge. |
+| `digest.max_findings` | 5 | The most findings in one digest. |
+| `hook.edit` | `async` | The digest after each edit: `async` (in the background; the agent gets it before it stops), `on` (before its next step; about 2 s for each edit) or `off`. |
 
 ## Test scope
 
