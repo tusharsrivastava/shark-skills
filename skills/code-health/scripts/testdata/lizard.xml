@@ -1,0 +1,74 @@
+<?xml version="1.0" ?>
+<?xml-stylesheet type="text/xsl" href="https://raw.githubusercontent.com/terryyin/lizard/master/lizard.xsl"?>
+<cppncss>
+	<measure type="Function">
+		<labels>
+			<label>Nr.</label>
+			<label>NCSS</label>
+			<label>CCN</label>
+		</labels>
+		<item name="label(...) at src/format.ts:1">
+			<value>1</value>
+			<value>8</value>
+			<value>4</value>
+		</item>
+		<item name="(anonymous)(...) at src/format.ts:10">
+			<value>2</value>
+			<value>1</value>
+			<value>1</value>
+		</item>
+		<item name="total(...) at src/format.ts:10">
+			<value>3</value>
+			<value>1</value>
+			<value>1</value>
+		</item>
+		<average label="NCSS" value="3.3333333333333335"/>
+		<average label="CCN" value="2.0"/>
+		<item name="apply_discounts(...) at src/pricing.py:1">
+			<value>4</value>
+			<value>12</value>
+			<value>7</value>
+		</item>
+		<item name="find_customer(...) at src/pricing.py:15">
+			<value>5</value>
+			<value>2</value>
+			<value>1</value>
+		</item>
+		<item name="size(...) at src/pricing.py:20">
+			<value>6</value>
+			<value>2</value>
+			<value>1</value>
+		</item>
+		<average label="NCSS" value="4.333333333333333"/>
+		<average label="CCN" value="2.5"/>
+	</measure>
+	<measure type="File">
+		<labels>
+			<label>Nr.</label>
+			<label>NCSS</label>
+			<label>CCN</label>
+			<label>Functions</label>
+		</labels>
+		<item name="src/format.ts">
+			<value>1</value>
+			<value>9</value>
+			<value>6</value>
+			<value>3</value>
+		</item>
+		<item name="src/pricing.py">
+			<value>2</value>
+			<value>17</value>
+			<value>9</value>
+			<value>3</value>
+		</item>
+		<average label="NCSS" value="13.0"/>
+		<average label="CCN" value="7.5"/>
+		<average label="Functions" value="3.0"/>
+		<sum label="NCSS" value="26"/>
+		<sum label="CCN" value="15"/>
+		<sum label="Functions" value="6"/>
+		<average label="NCSS" value="4.333333333333333"/>
+		<average label="CCN" value="2.5"/>
+	</measure>
+</cppncss>
+

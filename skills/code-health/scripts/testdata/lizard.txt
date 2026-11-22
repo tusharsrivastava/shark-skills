@@ -1,0 +1,22 @@
+================================================
+  NLOC    CCN   token  PARAM  length  location  
+------------------------------------------------
+       8      4     48      2       8 label@1-8@src/format.ts
+       1      1      4      2       1 (anonymous)@10-10@src/format.ts
+       1      1     22      1       1 total@10-10@src/format.ts
+      12      7     73      3      12 apply_discounts@1-12@src/pricing.py
+       2      1     16      2       2 find_customer@15-16@src/pricing.py
+       2      1      7      1       2 size@20-21@src/pricing.py
+2 file analyzed.
+==============================================================
+NLOC    Avg.NLOC  AvgCCN  Avg.token  function_cnt    file
+--------------------------------------------------------------
+      9       3.3     2.0       24.7         3     src/format.ts
+     17       5.3     3.0       32.0         3     src/pricing.py
+
+===============================================================================================================
+No thresholds exceeded (cyclomatic_complexity > 15 or length > 1000 or nloc > 1000000 or parameter_count > 100)
+==========================================================================================
+Total nloc   Avg.NLOC  AvgCCN  Avg.token   Fun Cnt  Warning cnt   Fun Rt   nloc Rt
+------------------------------------------------------------------------------------------
+        26       4.3     2.5       28.3        6            0      0.00    0.00
