@@ -1,11 +1,11 @@
 {
-  "fingerprint": "sha256:172279dfa4ee5fe3dbb51fd2bb77c9f5a7dfb01f6a1d7ec4da2b46a566d4963f",
-  "files": 169,
-  "ranAt": "2026-11-21T20:02:53.688Z",
+  "fingerprint": "sha256:1942d939ee95f24c63b620940b49dd0c9d0dffae11d7fbfb50c4a2d75f1ce089",
+  "files": 211,
+  "ranAt": "2026-11-21T21:26:55.332Z",
   "claudeVersion": "2.1.326",
-  "costUsd": 2.92,
-  "casesPassed": 11,
-  "casesTotal": 11,
+  "costUsd": 3.04,
+  "casesPassed": 14,
+  "casesTotal": 14,
   "cases": [
     {
       "name": "debugger-rca",
@@ -23,6 +23,39 @@
       "tags": [
         "bash",
         "comments"
+      ],
+      "runs": 1,
+      "runsPassed": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "health-edit-silent",
+      "tags": [
+        "bash",
+        "code-health"
+      ],
+      "runs": 1,
+      "runsPassed": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "health-edit-sqli",
+      "tags": [
+        "bash",
+        "code-health"
+      ],
+      "runs": 1,
+      "runsPassed": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "health-missing-tools",
+      "tags": [
+        "bash",
+        "code-health"
       ],
       "runs": 1,
       "runsPassed": 1,
@@ -102,8 +135,8 @@
         "style"
       ],
       "runs": 3,
-      "runsPassed": 3,
-      "score": 1,
+      "runsPassed": 2,
+      "score": 0.933,
       "passed": true
     },
     {
@@ -113,8 +146,8 @@
         "style"
       ],
       "runs": 3,
-      "runsPassed": 2,
-      "score": 0.933,
+      "runsPassed": 3,
+      "score": 1,
       "passed": true
     },
     {
