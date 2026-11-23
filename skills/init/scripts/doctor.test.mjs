@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, describe, test } from "node:test";
@@ -23,15 +23,18 @@ function write(dir, files) {
   }
 }
 
-/** A bin folder with stub tools, and a PATH of only that folder and the folders of node, git and sh. */
+/**
+ * A PATH with only the stub tools, links to git and sh, and the folder of node. Not /usr/bin: a CI runner has Go,
+ * Python and other tools there, and the tests must not depend on them.
+ */
 function bin(tools) {
   const d = tmp();
+  for (const name of ["git", "sh"]) symlinkSync(execFileSync("sh", ["-c", `command -v ${name}`], { encoding: "utf8" }).trim(), join(d, name));
   for (const [name, body] of Object.entries(tools)) {
     writeFileSync(join(d, name), `#!/bin/sh\n${body}\n`);
     chmodSync(join(d, name), 0o755);
   }
-  const keep = [dirname(process.execPath), "/usr/bin", "/bin"];
-  return { ...process.env, PATH: [d, ...keep].join(":") };
+  return { ...process.env, PATH: [d, dirname(process.execPath)].join(":") };
 }
 
 function repo(files) {
