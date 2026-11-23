@@ -72,13 +72,15 @@ Your report has one line: `Code health: <n> new, <n> allowed (ids and reasons), 
 | `health.mjs baseline allow <id> --reason <text> [--lane <name>]` | Accepts one finding on purpose. |
 | `health.mjs baseline fold` | Moves the lane allow files into the baseline (the lead, at merge). |
 | `health.mjs sarif --out <file> [--only sec,arch,cx]` | Merged SARIF for CI, GitHub code scanning or SonarQube. |
+| `health.mjs rules add` | Copies the starter rules for the languages of the project to `.shark/rules/`. Keeps a rule file that exists. |
 
 Exit codes: 0 clean, 1 new findings, 2 usage error, 3 a command row is missing in AGENTS.md, 4 an analyzer crashed
 or timed out.
 
 ## 4. Set it up in a project
 
-Add the rows to AGENTS.md › Commands, and copy the starter rules of this skill (`rules/`) to `.shark/rules/`:
+`/shark:init` does this setup and checks it (`skills/init/scripts/doctor.mjs`). By hand: add the rows to AGENTS.md ›
+Commands, and run `health.mjs rules add` to copy the starter rules of this skill to `.shark/rules/`:
 
 | Key | Example (Python and TS) |
 | --- | --- |
@@ -86,7 +88,8 @@ Add the rows to AGENTS.md › Commands, and copy the starter rules of this skill
 | `analyze:diff` | none (shark runs `analyze:file` on each changed file) |
 | `analyze:full` | `opengrep scan --quiet --disable-version-check -f .shark/rules --sarif-output={out} .` and `lizard --csv .` |
 
-- Install Opengrep from its signed GitHub release binary, never from PyPI (a malicious package uses the name). Keep
+- Install Opengrep with `scripts/install-opengrep.sh` (the release binary, with its SHA-256 checked), never from
+  PyPI (a malicious package uses the name). Keep
   `--disable-version-check`. Do not use `--experimental`: in 1.33.1 it found nothing on the starter rules.
 - One Opengrep 1.x scan of one file takes about 2 s, mostly start-up (p95 2.2 to 2.3 s, measured 2026-11-21). Shark
   scans the file and its base version in parallel. Because this is over the 2 s target, `hook.edit` is `async` by

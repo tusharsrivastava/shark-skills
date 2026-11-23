@@ -106,6 +106,8 @@ It will:
 - Ask for each value it can't find, with a suggested value for each
 - Set the project's output style to `shark:asd-ste100` in `.claude/settings.json`, so replies are short, outcome-first
   and end with a summary and action items
+- Check the tools behind the hooks, the guards and the debugger for each language of the project (debug adapters,
+  the code-health analyzers, rules and baseline), and install the missing ones at pinned versions after your yes
 
 The skills never hardcode a command. They run a key from your `Commands` table, so the same kit works on Python,
 JS/TS, Go, or anything with a test command.
@@ -278,7 +280,8 @@ production-scale systems, distilled into this setup.
 
 - **[/shark:init](./skills/init/SKILL.md)**: Set up a project once. Brings your `AGENTS.md` or `CLAUDE.md` in line
   with the **shark** template, so every session starts with the operator, or with your own orchestrator if you keep
-  it. Sets the `shark:asd-ste100` output style for the project.
+  it. Sets the `shark:asd-ste100` output style for the project. Checks and sets up the debugger and code-health tools
+  for each language (`skills/init/scripts/doctor.mjs`, which you can run again at any time).
 - **[/shark:operator](./skills/operator/SKILL.md)**: Run the session. Sets the mode, writes the briefs, routes the
   work to agents, and checks what comes back. Loads by itself after `/shark:init`.
 - **[/shark:handoff](./skills/handoff/SKILL.md)**: Record and prune the handoff file, so the next session picks up

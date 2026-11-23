@@ -1,12 +1,18 @@
 ---
 name: init
-description: Sets up a repository for shark one time. Adds the missing template sections to CLAUDE.md or AGENTS.md with values from the repository, the Working rules block, one session start rule, and the shark:asd-ste100 output style. Keeps existing text. Use when the user says init or set up shark, or after a kit update.
+description: Sets up a repository for shark one time. Adds the missing template sections to CLAUDE.md or AGENTS.md with values from the repository, the Working rules block, one session start rule, and the shark:asd-ste100 output style. Checks and sets up the tools behind the hooks, the guards and the debugger for the languages of the project (debug adapters, code-health analyzers, rules and baseline). Keeps existing text. Use when the user says init, set up shark or check the shark tools, or after a kit update.
 ---
 
 # Init
 
-This skill makes the project file of a repository follow the shark template. Run it one time for each project. Run
-it again after a kit update: a second run on an unchanged template changes nothing.
+This skill makes the project file of a repository follow the shark template, and makes the tools work that the
+shark hooks, guards and debugger need in this project. Run it one time for each project. Run it again after a kit
+update: a second run on an unchanged template changes nothing.
+
+The plugin loads its hooks (`deny-secrets`, `wide-commits`, `health-edit`) and its MCP server (`mcp-debugger`) by
+itself. They work only when the project gives them what they read: the `## Secrets` lists, the `analyze:*` rows,
+the rules in `.shark/rules/`, a debug adapter for each language. The check script `doctor.mjs` (step 6) finds what is
+missing and gives the pinned fix for each item.
 
 The template is `${CLAUDE_PLUGIN_ROOT}/AGENTS.md`. Read it first. It has three parts:
 
@@ -29,7 +35,11 @@ The template is `${CLAUDE_PLUGIN_ROOT}/AGENTS.md`. Read it first. It has three p
 4. **Show the change before you write it.** Show a short summary and the new sections. Write only after the user
    says yes.
 5. **Do not commit.** Tell the user which files changed. The commit is a decision of the user.
-6. **Exactly one start rule.** After the run, the project file has one instruction about what runs first in a
+6. **Install only after a yes, and only the commands that `doctor.mjs` prints.** They are pinned. Never install
+   Opengrep from PyPI (a malicious package uses the name), never use `sudo`, and never install a Python debug
+   adapter outside the project environment. When the user says "do not install", list the commands and install
+   nothing.
+7. **Exactly one start rule.** After the run, the project file has one instruction about what runs first in a
    session. Never add a second one next to an orchestrator that the project already uses.
 
 ## Procedure
@@ -71,6 +81,9 @@ Read only the build and configuration files. Each value that you find is a sugge
 | Docs layout | The `docs/` tree, a decisions log, a handoff file |
 | Invariants | Do not guess. Suggest the template examples that fit the code (for example "Money" when the code has prices), and ask. |
 | Owner rules | Do not guess. Suggest the template defaults ("Push only when the owner asks", the 10-minute rule for long checks). |
+| `analyze:file`, `analyze:full` | Take the rows that `doctor.mjs` gives (step 6). Keep existing analyzer rows. |
+| `analyze:diff` | `none`, unless the project has its own diff scanner. |
+| `arch:check` | The row that `doctor.mjs` gives when the project configures import-linter, dependency-cruiser or depguard. Else `none`. |
 
 For a key that the project does not use (for example `test-db:copy` or `bench`), write `none`.
 
@@ -91,7 +104,7 @@ starts each session. Look for:
 If you find none, the `## Session harness` section gets the template default: "Invoke `/shark:operator` first,
 before the first answer."
 
-If you find one, ask the user which one leads. Put the question in the message of step 6. Name the orchestrator and
+If you find one, ask the user which one leads. Put the question in the message of step 7. Name the orchestrator and
 quote the rule or file where you found it. Give these choices:
 
 | Choice | `## Session harness` text | The existing start rule |
@@ -122,7 +135,7 @@ project in `.claude/settings.json`, the settings file that the team shares:
 | Does not exist | Make it with only the `outputStyle` key. |
 | Exists, with no `outputStyle` key | Add the key. Keep every other key and its value. |
 | Has `"outputStyle": "shark:asd-ste100"` | Change nothing. |
-| Has a different `outputStyle` | Ask in the message of step 6. Quote the current value. Recommend `shark:asd-ste100`. Change it only after a yes. |
+| Has a different `outputStyle` | Ask in the message of step 7. Quote the current value. Recommend `shark:asd-ste100`. Change it only after a yes. |
 
 Also read `.claude/settings.local.json`, if it exists. Its `outputStyle` overrides the shared file for one user. Do
 not change that file: it is personal. If it sets a different style, name it in the report.
@@ -130,12 +143,42 @@ not change that file: it is personal. If it sets a different style, name it in t
 If git ignores `.claude/settings.json` (`git check-ignore -q .claude/settings.json` exits with `0`), the setting
 stays on this machine only. Name this in the report.
 
-### 6. Ask for the rest
+### 6. Check the tools
 
-Send one message with every value that is still unknown. Use a table: section, item, suggested value, why. Use the
-answer for the rest of the run.
+Run the check script:
 
-### 7. Plan the Working rules block
+```bash
+node "${CLAUDE_PLUGIN_ROOT:-<directory of this skill>/../..}/skills/init/scripts/doctor.mjs" --no-smoke
+```
+
+It finds the languages of the repository and checks each part. It installs and writes nothing.
+
+| Area | Items |
+| --- | --- |
+| debugger | The `mcp-debugger` server in the npm cache; `.claude/mcp-debugger.log` in `.gitignore`; the debug adapter of each language (Python: `debugpy` in the project environment; JS/TS: Node 18 or later; Go: Delve) |
+| code-health | Opengrep (the fixed version or later) and Lizard; the starter rules for each language in `.shark/rules/`; the `analyze:file` and `analyze:full` rows; the baseline |
+| guards | The `## Secrets` lists (`deny-secrets`), the `## Invariants` rules (`shark:invariant-guard`), the `arch:check` row |
+
+Each row has a status (`ok`, `warn`, `missing`, `fail`) and, when it is not ok, the fix and its scope. Exit code `0`:
+nothing missing. Exit code `1`: one or more items are missing or failed. Put the fixes in the message of step 7, in
+three groups:
+
+1. **Installs** (each with its scope: the project environment, the user tool folder, the npm cache).
+2. **Files** that init adds: the starter rules in `.shark/rules/`, the `.gitignore` line.
+3. **Rows** that init adds to `## Commands`.
+
+A `warn` is not a blocker. Name it in the report (for example "no starter rules for Go: Lizard checks complexity
+only"). A language that the script does not check gets "not verified" in the report, never "ok".
+
+The `mcp-debugger` tools can also be checked in the session: search the deferred tools for `mcp-debugger`. Do not
+start a debug session in init.
+
+### 7. Ask for the rest
+
+Send one message with every value that is still unknown, and the fixes of step 6. Use a table: section, item,
+suggested value, why. Recommend each fix. Use the answer for the rest of the run.
+
+### 8. Plan the Working rules block
 
 Do not write the block in this step. Check the target with the script, and choose the action:
 
@@ -146,7 +189,7 @@ Do not write the block in this step. Check the target with the script, and choos
 | Exit code | Meaning | Action |
 | --- | --- | --- |
 | `0` | The block is the same as the template. | Change nothing. |
-| `3` | The target has no block. | Add it in step 8 with `working-rules.sh apply <target>`. |
+| `3` | The target has no block. | Add it in step 9 with `working-rules.sh apply <target>`. |
 | `1` | The block differs. | Show `working-rules.sh diff <target>`. A project can make a rule stricter. Ask the user which lines to keep. Never replace the block without a yes. |
 
 If the target already has a `## Working rules` section with no markers, do not add a second one. Show the
@@ -154,7 +197,7 @@ difference against `working-rules.sh print`, and ask the user how to merge.
 
 The first Working rule says that the session harness runs first. The `## Session harness` section names it.
 
-### 8. Write and check
+### 9. Write, set up the tools, and check
 
 1. Show the summary: the target file, the sections added, the rows added, the Working rules action, and the
    output style action.
@@ -169,6 +212,14 @@ The first Working rule says that the session harness runs first. The `## Session
       the last line of the target with that line, a blank line, and the block. Do not retype or shorten the block.
    4. Change `.claude/settings.json` with the Edit tool (or the Write tool for a new file), not with a script, so
       that its other keys and its format stay the same.
+   5. Add the starter rules with the command that step 6 named (`health.mjs rules add`: it copies the rules for the
+      languages of the project to `.shark/rules/` and keeps a rule file that exists). Add the `.gitignore` line
+      with the Edit tool (or the Write tool when there is no `.gitignore`).
+   6. Run the install commands that the user approved, one at a time, exactly as `doctor.mjs` printed them.
+
+   Run one action in each Bash command; do not chain writes with `&&`. When a write or a command fails or is
+   refused, stop only that item: keep its error for the report, and continue with the next item and with the
+   checks below.
 3. Run `working-rules.sh check <target>` again. Expect exit code `0`, or `1` when the user kept a stricter rule. If
    it gives `3`, the block is missing: add it again as in step 2, and check again.
 4. Check that each of the eight section headings occurs one time in the target.
@@ -177,8 +228,19 @@ The first Working rule says that the session harness runs first. The `## Session
    the same skill).
 6. Check that `.claude/settings.json` is valid JSON and that its `outputStyle` is the value that the user agreed:
    `node -e 'console.log(JSON.parse(require("fs").readFileSync(".claude/settings.json","utf8")).outputStyle)'`.
+7. Run `doctor.mjs` again, without `--no-smoke`. The smoke check runs `analyze:file` on one source file of each
+   language. Each item that was fixed must now be `ok`.
+8. When the analyze rows and the analyzers are `ok`, record the baseline:
 
-### 9. Report
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT:-<directory of this skill>/../..}/skills/code-health/scripts/health.mjs" baseline record
+   ```
+
+   It writes `.shark/health-baseline.json` with the findings that exist now, so that the hook shows only new ones.
+   Give its counts in the report. Do not record a baseline when an analyzer is missing or failed: a baseline with a
+   missing analyzer hides nothing and misleads the next run.
+
+### 10. Report
 
 Report in ASD-STE100: outcome first. Name:
 
@@ -187,10 +249,14 @@ Report in ASD-STE100: outcome first. Name:
 - the output style in `.claude/settings.json`, a different style in `.claude/settings.local.json`, and whether git
   ignores the shared settings file;
 - each value that is a suggestion and that the user did not confirm;
+- the final `doctor.mjs` result, as a table: item, status (the word that the script printed: `ok`, `warn`,
+  `missing`, `fail`, or "not verified" when the script did not check it), and the fix command. Give each install
+  that ran with its version. Never call a tool ready when the last check did not show it as `ok`;
+- the baseline counts, and that `.shark/health-baseline.json` and `.shark/rules/` are for the user to commit;
 - the next steps for the user:
   - start a new session, so that Claude Code reads the new project file and the output style;
   - check the two lists in `## Secrets`: the `deny-secrets` hook of the kit reads them and refuses tool calls on those
     files;
-  - add `.claude/mcp-debugger.log` to `.gitignore` (`shark:gitignore` can do this).
+  - run `doctor.mjs` again after a new language or a new machine.
 
 Do not commit the files.
