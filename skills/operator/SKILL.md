@@ -14,17 +14,21 @@ output, and you do not write production code yourself.
 Choose the path before you read a mode file or brief an agent.
 
 **First check: is this a bug report, and how many symptoms does it give?** Count the symptoms of the report (a
-precondition such as "each locale has a status" is not a symptom). Then say in one line which case applies:
+precondition such as "each locale has a status" is not a symptom). Count causes, not phrasings: when the report names
+one cause and your first read of that code confirms it, the symptoms that this cause explains are one symptom with
+input variants. Then write one line, `Path: direct` or `Path: debug`, with the reason:
 
-- **Two or more symptoms, or a defect in a twin path that the report names:** debug mode. A twin path is two
+- **Two or more symptoms, or a defect in a twin path that the report names, and no one confirmed cause explains
+  them all:** debug mode. A twin path is two
   separate code paths that implement the same behaviour (collection and global operations, a single and a bulk
   endpoint). Two clients or channels that send different inputs to the same code (web and POS orders) are not a
   twin path: that is one symptom with an input variant. Do not investigate the causes yourself. Read `modes/debug.md` and follow it:
   properties, zones, a parallel fan-out of `shark:code-debugger`, the merge, then the fix. This applies also when
   the request tells you to investigate, fix and test it yourself.
-- **One symptom, no named twin path:** the direct path, test first. Reproduce the failure with a test, find the
-  cause, fix it, and run the gate. Escalate to debug mode with one `shark:code-debugger` (single mode) only when you
-  cannot reproduce the failure in about 10 minutes, when your first fix does not make the reproduction pass, or when
+- **One symptom, or one confirmed cause that explains all symptoms:** the direct path, test first. Reproduce the
+  failure with a test, find the cause, fix it, and run the gate. When the report names a twin path ("inconsistent
+  with", "mirror the logic in"), grep the copied expression and change every copy through one function. Escalate to
+  debug mode with one `shark:code-debugger` (single mode) only when you cannot reproduce the failure in about 10 minutes, when your first fix does not make the reproduction pass, or when
   you find a second symptom. Say which condition applies.
 
 Otherwise, the direct path is the default.
@@ -32,8 +36,8 @@ Otherwise, the direct path is the default.
 | Path | The request is… | What you do |
 | --- | --- | --- |
 | **Named** | the user names a shark skill or agent | Run that skill, or start that agent, with the user's words. Add no mode, no contract and no extra brief. |
-| **Direct** | a question or an explanation; a review of a file or a diff; or a change with a clear expected result in 3 modules or fewer and about 10 files or fewer, with no migration and no public-interface change that the user did not approve (§9) | Do it yourself, in this session. Read no mode file, write no contract, start no subagent. Keep the project rules: the test first for a fix, the gate of `## Test scope`, the scope rule (§9) and the voice (§10). Check your diff against `## Invariants` yourself, item by item, and report the result. |
-| **Orchestrated** | more than 3 modules or about 10 files; independent parts that are each more than about 30 minutes of work, so that parallel lanes save time; a migration; a bug report with two or more symptoms, a defect in a twin path that the report names, or a one-symptom defect that the direct path could not reproduce or fix (debug mode, see the first check); a rewrite, an audit, a merge or a fix round; or the user asks for agents or lanes by name | Choose the mode (§3) and follow it. |
+| **Direct** | a question or an explanation; a review of a file or a diff; or a change with a clear expected result in 3 modules or fewer and about 10 files or fewer, with no migration and no public-interface change that the user did not approve (§9) | Do it yourself, in this session. Read no mode file, write no contract, start no subagent. Keep the project rules: the test first for a fix, the gate of `## Test scope`, the scope rule (§9) and the voice (§10). Check your diff against `## Invariants` yourself, item by item, and report the result. For a fix, read `shark:code-authoring` §1 (regression safety) and follow it: the test baseline before the change, the narrowest condition, absent, empty and unchanged as three inputs. Fix the code, not the test: if you must change an existing test (its types, casts or assertions), the fix is too wide or changes an interface; first try a design that keeps the test. Never `git stash`: to compare with the code before your change, use `git diff > <file>` or a worktree. |
+| **Orchestrated** | more than 3 modules or about 10 files; independent parts that are each more than about 30 minutes of work, so that parallel lanes save time; a migration; a bug report with two or more symptoms or a defect in a named twin path that no one confirmed cause explains, or a one-symptom defect that the direct path could not reproduce or fix (debug mode, see the first check); a rewrite, an audit, a merge or a fix round; or the user asks for agents or lanes by name | Choose the mode (§3) and follow it. |
 
 "Work in parallel where it helps" leaves the choice to you: choose lanes only when the orchestrated conditions apply.
 If direct work grows past its limits (more modules or files, a cause that is not clear, an interface change that
@@ -82,7 +86,9 @@ Report the defect after the fix: the defect, its regression test (failing, then 
 
 **Ask the user first** only in these cases (and the cases of `## Owner rules`):
 
-- Two behaviours are possible, and the spec, the code and the plan do not decide between them.
+- Two behaviours are possible, and the spec, the code and the plan do not decide between them. A report that lists
+  options and accepts each one has decided: take the option that changes the least runtime behaviour (a type-level
+  change before a runtime change), and say so.
 - The fix changes a business rule, or the default of a configurable setting.
 - The fix adds a permission, or changes the permission model.
 - The fix adds an external service or a runtime dependency.

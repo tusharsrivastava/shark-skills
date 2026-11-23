@@ -60,7 +60,7 @@ Review a change to `evals/attestation.json` like any other change.
 | Tag | Cases | Needs |
 | --- | --- | --- |
 | `local` | `style-short-answer`, `style-safe-delete`, `writer-doc-comments`, `secrets-hook-read` | Read, Write and Edit only |
-| `bash` | `fix-no-comments`, `init-*`, `secrets-hook-bash` | The Bash sandbox. It does not start on a machine whose credential folders (for example `~/.kube`) hold a symbolic link: use `evals/docker/run.sh`. |
+| `bash` | `fix-no-comments`, `init-*`, `secrets-hook-bash`, `operator-route-*` | The Bash sandbox. It does not start on a machine whose credential folders (for example `~/.kube`) hold a symbolic link: use `evals/docker/run.sh`. |
 | `slow` | `debugger-rca` | The real mcp-debugger server and `debugpy`. The Docker image installs both. Grant the server by name (`mcp__plugin_shark_mcp-debugger`): the runner refuses `mcp__*`. |
 
 ## Why run.sh copies the plugin
