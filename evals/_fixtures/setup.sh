@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Copies a fixture project into the eval workspace (the current directory) and commits it.
-#   setup.sh <fixture> [extra...]   extras: env-canary, team-settings
+#   setup.sh <fixture> [extra...]   extras: env-canary, team-settings, code-health*, web-ts, go-svc
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 fixture="$1"; shift
@@ -53,6 +53,51 @@ def find_invoice(conn, invoice_id):
     # legacy code: kept as it is until the billing rewrite
     return conn.execute(f"SELECT * FROM invoices WHERE id = {invoice_id}").fetchone()
 PY
+      ;;
+    web-ts)
+      # A TypeScript web part next to the Python service (init must find both languages).
+      mkdir -p web/src
+      cat > web/package.json <<'JSON'
+{
+  "name": "billing-web",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test", "lint": "tsc --noEmit -p ." },
+  "devDependencies": { "typescript": "5.6.3" }
+}
+JSON
+      cat > web/tsconfig.json <<'JSON'
+{ "compilerOptions": { "strict": true, "target": "ES2022", "module": "NodeNext", "noEmit": true }, "include": ["src"] }
+JSON
+      cat > web/src/format.ts <<'TS'
+export function formatTotal(cents: number, currency: string): string {
+  const sign = cents < 0 ? "-" : "";
+  const abs = Math.abs(cents);
+  return `${sign}${currency} ${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, "0")}`;
+}
+TS
+      ;;
+    go-svc)
+      # A Go service next to the Python one. The eval image has no Go toolchain and no Delve.
+      mkdir -p svc
+      printf 'module example.com/billing/svc\n\ngo 1.23\n' > svc/go.mod
+      cat > svc/main.go <<'GO'
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println(total([]int{100, 250}))
+}
+
+func total(cents []int) int {
+	sum := 0
+	for _, c := range cents {
+		sum += c
+	}
+	return sum
+}
+GO
       ;;
     *) echo "unknown extra: $extra" >&2; exit 1 ;;
   esac
