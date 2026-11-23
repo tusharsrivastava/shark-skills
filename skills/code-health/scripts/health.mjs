@@ -27,6 +27,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { isLizard, lizardToSarif, parseLizard } from "./lizard2sarif.mjs";
 import { category, displayRule, fingerprint, flatten, functionsOf, hash, LEVELS, parseSarif, toSarif } from "./sarif.mjs";
 
@@ -612,6 +613,36 @@ export function cmdBaselineFold(project) {
   return { code: EXIT.CLEAN, text: folded.length ? `code-health: folded ${folded.length} allow entries:\n${folded.join("\n")}` : "code-health: no lane allow entries." };
 }
 
+/** The starter rule file of each source extension that has one. */
+const STARTER_RULES = [
+  [/\.(py|pyi)$/i, "sec-python.yaml"],
+  [/\.(js|mjs|cjs|jsx|ts|tsx|mts|cts)$/i, "sec-javascript.yaml"],
+];
+const RULES_DIR = fileURLToPath(new URL("../rules/", import.meta.url));
+
+/** Copies the starter rules for the languages of the project to .shark/rules/. A file that exists stays as it is. */
+export function cmdRulesAdd(project) {
+  const want = new Set();
+  for (const f of trackedSources(project)) {
+    for (const [re, file] of STARTER_RULES) if (re.test(f)) want.add(file);
+  }
+  if (!want.size) return { code: EXIT.CLEAN, text: "code-health: no starter rules for the languages of this project. Write rules with references/rule-authoring.md." };
+  const dir = join(project.root, ".shark", "rules");
+  const added = [];
+  const kept = [];
+  for (const file of [...want].sort()) {
+    const dest = join(dir, file);
+    if (existsSync(dest)) {
+      kept.push(file);
+      continue;
+    }
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(dest, readFileSync(join(RULES_DIR, file), "utf8"));
+    added.push(file);
+  }
+  return { code: EXIT.CLEAN, text: `code-health: rules in .shark/rules/: added: ${added.join(", ") || "none"}; kept: ${kept.join(", ") || "none"}.` };
+}
+
 export function cmdSarif(project, { out, only } = {}) {
   if (!out) return { code: EXIT.USAGE, text: "code-health: sarif needs --out <file>." };
   const res = fullFindings(project);
@@ -660,7 +691,8 @@ const USAGE = `usage:
   health.mjs diff [--base <ref>] [--json]
   health.mjs arch
   health.mjs baseline record | compare [--base <ref>] | allow <id> --reason <text> [--lane <name>] | fold
-  health.mjs sarif --out <file> [--only sec,arch,cx]`;
+  health.mjs sarif --out <file> [--only sec,arch,cx]
+  health.mjs rules add`;
 
 export function main(argv, cwd = process.cwd()) {
   let args;
@@ -686,6 +718,7 @@ export function main(argv, cwd = process.cwd()) {
   if (cmd === "baseline" && sub === "compare") return cmdBaselineCompare(project, { base: opt.base ?? "HEAD" });
   if (cmd === "baseline" && sub === "allow") return cmdBaselineAllow(project, arg, { reason: opt.reason, lane: opt.lane });
   if (cmd === "baseline" && sub === "fold") return cmdBaselineFold(project);
+  if (cmd === "rules" && sub === "add") return cmdRulesAdd(project);
   if (cmd === "sarif") return cmdSarif(project, { out: opt.out, only: opt.only });
   if (cmd === "hotspots") return { code: EXIT.USAGE, text: "code-health: hotspots comes in a later release (milestone M4)." };
   return { code: EXIT.USAGE, text: USAGE };

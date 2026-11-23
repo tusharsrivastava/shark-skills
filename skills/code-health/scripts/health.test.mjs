@@ -244,3 +244,22 @@ describe("diff and sarif", () => {
     assert.deepEqual(JSON.parse(readFileSync(out, "utf8")).runs.flatMap((r) => r.results.map((x) => x.ruleId)), ["shark.rules.sec-sql-string-concat"]);
   });
 });
+
+describe("rules add", () => {
+  test("copies the starter rules for the languages of the project and keeps a rule file that exists", () => {
+    const dir = repo({ "app.py": SAFE, "web/f.ts": "export const a = 1;\n", ".shark/rules/sec-python.yaml": "rules: [] # project copy\n" });
+    const r = main(["rules", "add"], dir);
+    assert.equal(r.code, 0);
+    assert.match(r.text, /added: sec-javascript\.yaml/);
+    assert.match(r.text, /kept: sec-python\.yaml/);
+    assert.match(readFileSync(join(dir, ".shark/rules/sec-javascript.yaml"), "utf8"), /id: sec-sql-string-concat/);
+    assert.equal(readFileSync(join(dir, ".shark/rules/sec-python.yaml"), "utf8"), "rules: [] # project copy\n");
+  });
+  test("a project with no language that has starter rules gets none", () => {
+    const dir = repo({ "main.go": "package main\n" });
+    const r = main(["rules", "add"], dir);
+    assert.equal(r.code, 0);
+    assert.match(r.text, /no starter rules/);
+    assert.equal(existsSync(join(dir, ".shark/rules")), false);
+  });
+});
