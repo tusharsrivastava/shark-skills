@@ -25,7 +25,15 @@ const HEALTH = fileURLToPath(new URL("../skills/code-health/scripts/health.mjs",
 const AGENTS = /(^|:)(code-writer|lead-engineer)$/;
 const EDIT_TOOLS = new Set(["Edit", "MultiEdit", "Write"]);
 const MAX_BASH_FILES = 3;
-const BUDGET_MS = 8000;
+
+/**
+ * The time for all analyzer runs of one hook call: 2 s less than the timeout of its entry in hooks.json (10 s for the
+ * sync entry, 30 s for the async one). One Opengrep scan takes about 2 to 4 s, and a Bash command can change up to
+ * MAX_BASH_FILES files.
+ */
+export function budgetMs(isAsync) {
+  return isAsync ? 28000 : 8000;
+}
 
 let healthMod = null;
 async function health() {
@@ -134,7 +142,7 @@ export async function decide(input, { now = Date.now(), async: isAsync = false }
 
   const texts = [];
   const notVerified = [];
-  const deadline = Date.now() + BUDGET_MS;
+  const deadline = Date.now() + budgetMs(isAsync);
   for (const rel of files) {
     const left = deadline - Date.now();
     if (left < 1000) {

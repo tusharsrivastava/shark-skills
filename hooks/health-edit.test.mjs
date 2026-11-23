@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { decide as decideRaw, editedLines } from "./health-edit.mjs";
+import { budgetMs, decide as decideRaw, editedLines } from "./health-edit.mjs";
 
 // The default mode is async: these tests call the async entry unless they say otherwise.
 const decide = (input, opts = {}) => decideRaw(input, { async: true, ...opts });
@@ -119,6 +119,32 @@ describe("one analyzer fails", () => {
     const first = edit(dir, "src/q.py");
     assert.match((await decide(first)).context, /not verified \(`no-such-sast-xyz` not installed/);
     assert.equal(await decide({ ...first }), null);
+  });
+});
+
+describe("time budget", () => {
+  test("async: three files changed by one Bash command, each about 3 s to analyze, are all checked", async () => {
+    // Opengrep takes about 2 to 4 s for each file in a container; the sync budget (8 s) left the third file unchecked.
+    const dir = repo();
+    const sid = `budget-${process.pid}`;
+    const bash = { session_id: sid, hook_event_name: "PostToolUse", cwd: dir, tool_name: "Bash", tool_input: { command: "python3 edit.py" } };
+    assert.equal(await decide(bash, { now: Date.now() }), null);
+    await new Promise((r) => setTimeout(r, 20));
+    // three new files; git status lists them by path, so the unsafe one is checked last
+    write(dir, { "src/a.py": SAFE + "# a\n", "src/b.py": SAFE + "# b\n", "src/c.py": UNSAFE });
+    process.env.FAKE_SAST_SLEEP = "3000";
+    try {
+      const r = await decide(bash, { now: Date.now() + 10 });
+      assert.match(r?.context ?? "", /sec\/sql-string-concat/, r?.context);
+    } finally {
+      delete process.env.FAKE_SAST_SLEEP;
+    }
+  });
+  test("each budget ends at least 2 s before the timeout of its hook entry in hooks.json", () => {
+    const hooks = JSON.parse(readFileSync(new URL("./hooks.json", import.meta.url), "utf8")).hooks.PostToolUse;
+    const entries = hooks.flatMap((h) => h.hooks).filter((h) => h.command.includes("health-edit.mjs"));
+    for (const e of entries) assert.ok(budgetMs(!!e.async) <= (e.timeout - 2) * 1000, `${e.command}: ${budgetMs(!!e.async)} ms`);
+    assert.ok(budgetMs(true) >= 20000, "async has room for three files");
   });
 });
 
