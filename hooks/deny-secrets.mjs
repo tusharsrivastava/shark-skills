@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from "node:fs";
-import { basename, isAbsolute, join, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 
 const DEFAULT_SECRETS = [".env", ".env.*", "secrets/**", "*.pem", "*.key"];
 const DEFAULT_EXCEPTIONS = [];
@@ -109,35 +109,85 @@ export function checkBash(command, cwd, projectDir, policy, { wildcards = true }
   return null;
 }
 
-export function decide(input, projectDir) {
+/** The root of the git repository that holds `abs` (a folder with `.git`), or null. */
+export function repoRootOf(abs) {
+  for (let dir = dirname(abs); ; dir = dirname(dir)) {
+    if (existsSync(join(dir, ".git"))) return dir;
+    if (dirname(dir) === dir) return null;
+  }
+}
+
+/**
+ * The checks for one hook call. The list of the session folder (the project, or a multi-repo workspace) applies to
+ * every path. A path in another git repository (inside the workspace or next to it) also gets the list of that
+ * repository's own project file: both lists apply, so a repository can only add to the workspace list.
+ */
+function checker(projectDir, cwd) {
   const policy = readPolicy(projectDir);
-  if (!policy.secrets.length) return null;
+  const home = resolve(projectDir);
+  const repos = new Map();
+  const repoPolicy = (root) => {
+    if (!repos.has(root)) {
+      const own = PROJECT_FILES.some((name) => existsSync(join(root, name))) ? readPolicy(root) : null;
+      repos.set(root, own && own.source !== "the shark default list" ? own : null);
+    }
+    return repos.get(root);
+  };
+  const inRepo = (path) => {
+    const abs = isAbsolute(path) ? path : resolve(cwd, path);
+    const root = repoRootOf(abs);
+    if (!root || resolve(root) === home) return null;
+    const own = repoPolicy(root);
+    const rel = relative(root, abs);
+    if (!own || !own.secrets.length || rel.startsWith("..")) return null;
+    const pattern = secretFor(rel, own);
+    return pattern ? { pattern, source: `${relative(home, root) || root}/${own.source}` } : null;
+  };
+  return {
+    path(path) {
+      const pattern = secretFor(toRelative(path, cwd, projectDir), policy);
+      return pattern ? { pattern, source: policy.source } : inRepo(path);
+    },
+    text(text, wildcards) {
+      const hit = policy.secrets.length ? checkBash(text, cwd, projectDir, policy, { wildcards }) : null;
+      if (hit) return { ...hit, source: policy.source };
+      for (const token of shellTokens(text)) {
+        const own = inRepo(token);
+        if (own) return { path: token, ...own };
+      }
+      return null;
+    },
+  };
+}
+
+export function decide(input, projectDir) {
   const cwd = input.cwd || projectDir;
+  const check = checker(projectDir, cwd);
   const tool = input.tool_name;
   const args = input.tool_input || {};
   if (FILE_TOOLS[tool]) {
     const path = args[FILE_TOOLS[tool]];
     if (!path) return null;
-    const hit = secretFor(toRelative(path, cwd, projectDir), policy);
-    return hit ? { tool, path, pattern: hit, source: policy.source } : null;
+    const hit = check.path(path);
+    return hit ? { tool, path, ...hit } : null;
   }
   if (tool === "Grep") {
     for (const path of [args.path, args.glob].filter(Boolean)) {
-      const hit = secretFor(toRelative(path, cwd, projectDir), policy);
-      if (hit) return { tool, path, pattern: hit, source: policy.source };
+      const hit = check.path(path);
+      if (hit) return { tool, path, ...hit };
     }
     return null;
   }
   if (DEBUGGER_TOOL.test(tool)) {
     for (const text of stringsIn(args)) {
-      const hit = checkBash(text, cwd, projectDir, policy, { wildcards: false });
-      if (hit) return { tool, ...hit, source: policy.source };
+      const hit = check.text(text, false);
+      if (hit) return { tool, ...hit };
     }
     return null;
   }
   if (tool === "Bash" && args.command) {
-    const hit = checkBash(args.command, cwd, projectDir, policy);
-    return hit ? { tool, ...hit, source: policy.source } : null;
+    const hit = check.text(args.command, true);
+    return hit ? { tool, ...hit } : null;
   }
   return null;
 }
