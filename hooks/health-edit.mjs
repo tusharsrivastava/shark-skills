@@ -7,6 +7,9 @@
  * shark:code-writer and shark:lead-engineer only, and only in a project that opted in to code-health (an
  * `analyze:*` or `arch:check` row with a command in `## Commands`). `hook.edit: off` turns it off.
  *
+ * It tells each finding one time for each session (by its id): the base is the commit at the start of the session,
+ * so a finding that the agent keeps stays new after each later edit of that file.
+ *
  * After a Bash call it checks the source files that changed since its last check (at most 3), because agents also
  * edit with sed or a script. It fails open: when the analyzer is missing, crashes or times out, it says "not
  * verified" one time for each session, then stays silent.
@@ -142,6 +145,8 @@ export async function decide(input, { now = Date.now(), async: isAsync = false }
 
   const texts = [];
   const notVerified = [];
+  const told = new Set(state.told ?? []);
+  let retold = 0;
   const deadline = Date.now() + budgetMs(isAsync);
   for (const rel of files) {
     const left = deadline - Date.now();
@@ -150,12 +155,20 @@ export async function decide(input, { now = Date.now(), async: isAsync = false }
       break;
     }
     const r = h.cmdFile(project, rel, { base: state.base, near, timeoutMs: left });
-    if (r.code === h.EXIT.NEW && r.text) texts.push(r.text);
-    else notVerified.push(...(r.notVerified ?? [])); // a failed analyzer, also when another one ran clean
+    if (r.code === h.EXIT.NEW && r.findings?.length) {
+      // The base is the commit at the start of the session, so a finding stays new until it is fixed. Tell each
+      // finding one time: the agent has it, and fixes it or accepts it (`baseline allow`).
+      const fresh = r.findings.filter((f) => !told.has(f.fp));
+      retold += r.findings.length - fresh.length;
+      if (fresh.length) texts.push(h.digest(fresh, { scope: rel, budgets: project.budgets, notVerified: r.notVerified ?? [], near }));
+      for (const f of fresh) told.add(f.fp);
+    } else notVerified.push(...(r.notVerified ?? [])); // a failed analyzer, also when another one ran clean
   }
+  state.told = [...told];
+  save();
   const event = { session: input.session_id ?? null, agent: input.agent_type ?? "main", tool, mode, files, ms: Date.now() - t0 };
   if (texts.length) {
-    logEvent(project, { ...event, kind: "digest", text: texts.join("\n\n") });
+    logEvent(project, { ...event, kind: "digest", text: texts.join("\n\n"), ...(retold ? { retold } : {}) });
     return { context: texts.join("\n\n") };
   }
   if (notVerified.length && !state.warned) {
@@ -165,7 +178,7 @@ export async function decide(input, { now = Date.now(), async: isAsync = false }
     logEvent(project, { ...event, kind: "not-verified", text: context });
     return { context };
   }
-  logEvent(project, { ...event, kind: "clean" });
+  logEvent(project, { ...event, kind: retold ? "told" : "clean", ...(retold ? { retold } : {}) });
   return null;
 }
 

@@ -15,7 +15,8 @@ where your session started. Old debt never shows. AGENTS.md wins over a rule her
 The shark hook `health-edit` runs `analyze:file` on each source file that you change (Edit, Write, or a Bash command
 that changes a file). It prints nothing when nothing is new. When something is new, you get a digest. With
 `hook.edit: async` (the default) the check runs in the background and the digest reaches you as hook feedback, at
-the latest when you try to stop; with `on` it reaches you before your next step.
+the latest when you try to stop; with `on` it reaches you before your next step. The hook tells each finding one
+time in a session. A finding that you keep stays new: `health.mjs diff` lists it again, and your report names it.
 
 ```text
 code-health: 2 new in src/billing/invoice.py (budget: ccn 10)

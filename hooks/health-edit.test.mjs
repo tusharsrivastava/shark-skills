@@ -112,6 +112,33 @@ describe("when the hook speaks", () => {
   });
 });
 
+describe("each finding is told one time for each session", () => {
+  // The hook compares with the commit at the start of the session, so a finding that the agent keeps (on purpose,
+  // or until a later step) was told again after each edit of that file: 4 times for one accepted nloc warning on
+  // mikro-orm-8227, and the agent then searched for a way to make it stop.
+  const UNSAFE2 = UNSAFE + `def find_all(db, name):\n    return db.execute("SELECT * FROM c WHERE n = " + name)\n`;
+  test("a finding that was already told is not told again; a new one is", async () => {
+    const dir = repo();
+    const session = { session_id: `told-${process.pid}` };
+    write(dir, { "src/q.py": UNSAFE });
+    assert.match((await decide(edit(dir, "src/q.py", session))).context, /1 new in src\/q.py/);
+    write(dir, { "src/q.py": "# note\n" + UNSAFE });
+    assert.equal(await decide(edit(dir, "src/q.py", session)), null, "the same finding after the next edit");
+    write(dir, { "src/q.py": "# note\n" + UNSAFE2 });
+    const r = await decide(edit(dir, "src/q.py", session));
+    assert.match(r.context, /1 new in src\/q.py/);
+    assert.match(r.context, /L5 /);
+    const log = readFileSync(join(dir, ".git/shark-health/events.log"), "utf8").trim().split("\n").map((l) => JSON.parse(l));
+    assert.deepEqual(log.filter((e) => e.kind !== "start").map((e) => e.kind), ["digest", "told", "digest"]);
+  });
+  test("another session is told again", async () => {
+    const dir = repo();
+    write(dir, { "src/q.py": UNSAFE });
+    assert.ok(await decide(edit(dir, "src/q.py", { session_id: `a-${process.pid}` })));
+    assert.ok(await decide(edit(dir, "src/q.py", { session_id: `b-${process.pid}` })));
+  });
+});
+
 describe("one analyzer fails", () => {
   test("a clean result from the other analyzer still says not verified, one time", async () => {
     const dir = repo(agents({ cmd: `\`no-such-sast-xyz {file}\` and \`node ${TD}fake-lizard.mjs {file}\`` }));
