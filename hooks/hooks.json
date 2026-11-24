@@ -7,7 +7,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/deny-secrets.mjs\"",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/deny-secrets.mjs"
+            ],
             "timeout": 10
           }
         ]
@@ -17,7 +20,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/deny-secrets.mjs\"",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/deny-secrets.mjs"
+            ],
             "timeout": 10
           }
         ]
@@ -27,7 +33,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/wide-commits.mjs\"",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/wide-commits.mjs"
+            ],
             "timeout": 10
           }
         ]
