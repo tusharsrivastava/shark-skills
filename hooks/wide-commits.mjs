@@ -3,6 +3,7 @@
 // One reason can touch many files (a rename), so the hook asks; it does not refuse. Lock files and pure renames do
 // not count. SHARK_WIDE_COMMIT_FILES sets the limit (default 6; 0 turns the hook off).
 import { execFileSync } from "node:child_process";
+import { isAbsolute, resolve } from "node:path";
 import { DEFAULT_MAX, wideCommits } from "../skills/commit-blocks/scripts/split-check.mjs";
 
 const PR_CREATE = /(^|[\s;&|(])gh\s+pr\s+create(\s|$)/;
@@ -31,12 +32,27 @@ export function baseOf(command, cwd) {
   return "";
 }
 
+/**
+ * The folder where `gh pr create` runs: the last `cd <dir>` before it in the command, else the session folder. In a
+ * multi-repo workspace the session folder is the workspace, and the agent changes into a repository first.
+ */
+export function dirOf(command, cwd) {
+  const head = command.slice(0, command.search(PR_CREATE) + 1);
+  let dir = cwd;
+  for (const m of head.matchAll(/(?:^|[;&|(]\s*)cd\s+(?:"([^"]+)"|'([^']+)'|([^\s;&|)]+))/g)) {
+    const target = m[1] ?? m[2] ?? m[3];
+    if (target.startsWith("$") || target.startsWith("~") || target === "-") continue;
+    dir = isAbsolute(target) ? target : resolve(dir, target);
+  }
+  return dir;
+}
+
 export function decide(input, env = process.env) {
   const command = input?.tool_input?.command;
   if (input?.tool_name !== "Bash" || typeof command !== "string" || !PR_CREATE.test(command)) return null;
   const max = Number(env.SHARK_WIDE_COMMIT_FILES ?? DEFAULT_MAX);
   if (!Number.isFinite(max) || max <= 0) return null;
-  const cwd = input.cwd || process.cwd();
+  const cwd = dirOf(command, input.cwd || process.cwd());
   const base = baseOf(command, cwd);
   if (!base) return null;
   const wide = wideCommits(cwd, base, max);
