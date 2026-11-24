@@ -10,10 +10,19 @@ rules:
     metadata:
       invariant: injection
       category: security
+    paths:
+      # A test builds SQL for its own test database.
+      exclude: ["*.test.*", "*.spec.*", "**/__tests__/**", "**/test/**", "**/tests/**"]
     patterns:
       - pattern-either:
           - pattern: $DB.$Q($A + $B, ...)
           - pattern: $DB.$Q(`...${$X}...`, ...)
+      # An identifier that went through a quoting function of the driver, joined to constant text, is not a value.
+      - pattern-not: $DB.$Q($P.quoteIdentifier(...) + "...", ...)
+      - pattern-not: $DB.$Q($P.escapeIdentifier(...) + "...", ...)
+      - pattern-not: $DB.$Q($P.escapeId(...) + "...", ...)
+      # The same in a template literal: each ${...} in it is such a call.
+      - pattern-not-regex: '`(?:[^`$]|\$(?!\{))*(?:\$\{[\w.#]+\.(?:quoteIdentifier|escapeIdentifier|escapeId)\([^()`]*(?:\([^()`]*\)[^()`]*)*\)\}(?:[^`$]|\$(?!\{))*)+`'
       - metavariable-regex:
           metavariable: $Q
           regex: ^(query|execute|raw|prepare|\$queryRawUnsafe|\$executeRawUnsafe)$
