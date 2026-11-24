@@ -1,12 +1,16 @@
 ---
 name: init
-description: Sets up a repository for shark one time. Adds the missing template sections to CLAUDE.md or AGENTS.md with values from the repository, the Working rules block, one session start rule, and the shark:asd-ste100 output style. Keeps existing text. Use when the user says init or set up shark, or after a kit update.
+description: Sets up a repository, or a multi-repo workspace, for shark one time. Adds the missing template sections to CLAUDE.md or AGENTS.md with values from the repository, the Working rules block, one session start rule, and the shark:asd-ste100 output style. In a folder that is not a repository, it can set up a workspace that manages several repositories (inside it or next to it), and asks for their paths or URLs. Keeps existing text. Use when the user says init or set up shark, or after a kit update.
 ---
 
 # Init
 
 This skill makes the project file of a repository follow the shark template. Run it one time for each project. Run
 it again after a kit update: a second run on an unchanged template changes nothing.
+
+It also sets up a **multi-repo workspace**: a folder, with its own git repository and no remote, that holds the
+shared project file of several repositories. The repositories are inside the workspace or next to it (for example
+`../api`). Step 0 decides which procedure applies.
 
 The template is `${CLAUDE_PLUGIN_ROOT}/AGENTS.md`. Read it first. It has three parts:
 
@@ -31,8 +35,26 @@ The template is `${CLAUDE_PLUGIN_ROOT}/AGENTS.md`. Read it first. It has three p
 5. **Do not commit.** Tell the user which files changed. The commit is a decision of the user.
 6. **Exactly one start rule.** After the run, the project file has one instruction about what runs first in a
    session. Never add a second one next to an orchestrator that the project already uses.
+7. **Never invent a repository.** In a workspace, use only the repositories that the scan finds and the user picks,
+   and the paths and URLs that the user gives. Run `git init` and `git clone` only after a yes.
 
 ## Procedure
+
+### 0. Repository or workspace
+
+Run the scan in the folder where the session runs:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT:-<directory of this skill>/../..}/skills/init/scripts/workspace.mjs" scan
+```
+
+| `kind` | Meaning | Action |
+| --- | --- | --- |
+| `repository` | The root of a git repository | Steps 1 to 9 on this repository. |
+| `inside-repository` | A subfolder of a git repository | Steps 1 to 9 on the repository root. Tell the user. |
+| `project` | No git, but the build file of one project (`markers`) | Steps 1 to 9 on this folder. |
+| `workspace` | Empty, or it holds git repositories (`repos`), or its project file has `## Repositories` | Ask: "Set up this folder as a multi-repo workspace?" On a yes, do [Workspace mode](#workspace-mode). On a no, steps 1 to 9. |
+| `folder` | None of these | Ask the user if it is one project or a workspace. |
 
 ### 1. Choose the project file
 
@@ -194,3 +216,117 @@ Report in ASD-STE100: outcome first. Name:
   - add `.claude/mcp-debugger.log` to `.gitignore` (`shark:gitignore` can do this).
 
 Do not commit the files.
+
+## Workspace mode
+
+A workspace holds the shared rules of several repositories. Its project file names the repositories. Each repository
+keeps its own project file for its own values (commands, gates, secrets, architecture rules); that file wins for work
+in that repository. Both secret lists apply: the `deny-secrets` hook reads the workspace file and the file of the
+repository that holds each path.
+
+### W1. Get the repositories
+
+| Scan result | Action |
+| --- | --- |
+| `empty: true` | Do not search. Ask the user for the repositories to manage: a folder path for each repository that exists (inside the workspace or next to it, for example `../api`), or a git URL to clone into the workspace. |
+| `repos` not empty | Show the found repositories (path, remote). Ask which ones to manage. The user can add more paths or URLs. |
+| `empty: false`, no `repos` | Tell the user that you found no repository, and ask as for an empty workspace. |
+
+Ask in one message, together with the questions of W2. Then check every path that the user gave:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT:-<directory of this skill>/../..}/skills/init/scripts/workspace.mjs" check <path>...
+```
+
+A path with `ok: false` is not used. Tell the user its `reason`, and ask one time for a correct path.
+
+For each URL: the folder name is the last part of the URL without `.git`, unless the user gives one. A folder with
+that name must not exist. After the yes of W3, clone it: `git clone <url> <name>` in the workspace, one clone in
+each Bash command. A failed clone stops only that repository: report it, and continue with the others.
+
+### W2. Values to ask for
+
+In the same message as W1, ask for the values that you cannot find. Give a suggestion for each:
+
+- a short role for each repository (for example "backend API", "web app");
+- the rules that cross repositories, for `## Invariants` (for example "the web app uses only the API contract in
+  `api/openapi.yaml`"). Do not guess; suggest none when the user gives none;
+- the session harness (step 4 of the procedure, on the workspace folder);
+- the owner rules (the template defaults).
+
+### W3. Show the plan, then write after a yes
+
+Show the summary: `git init` (when `gitInit` is false; no remote), the clones, the workspace project file, the
+`.claude/settings.json` change, the `.gitignore` lines. Write after the user says yes, in this order:
+
+1. `git init` in the workspace, when `gitInit` is false. Do not add a remote. When the scan gives
+   `outerRepository`, the workspace is inside another repository: say so in the summary. The workspace becomes a
+   repository of its own inside it. Do not change the outer repository; tell the user that it can ignore the
+   workspace folder.
+2. The clones of W1.
+3. The project file of the workspace (step 1 chooses the target: `AGENTS.md` when the folder has none). Write these
+   sections, with the values of W1 and W2. A section that exists stays as it is; add only the rows that are missing
+   in `## Repositories`.
+
+   ```markdown
+   # AGENTS.md: <workspace name> workspace
+
+   ## Repositories
+
+   This folder is a multi-repo workspace. Each repository's own project file (AGENTS.md or CLAUDE.md) gives its
+   commands, gates, secrets and architecture rules, and wins for work in that repository. Read it before you work
+   in a repository. The Working rules and the secret lists of both files always apply. Each repository has its own
+   git history: commit, branch and open pull requests in the repository, never in the workspace.
+
+   | Name | Path | Remote | Role |
+   | --- | --- | --- | --- |
+   | <name> | `<path from the check>` | <remote, or none> | <role> |
+
+   ## Invariants
+   ## Secrets
+   ## Docs layout
+   ## Owner rules
+   ## Session harness
+   ```
+
+   Fill `## Invariants`, `## Secrets`, `## Docs layout`, `## Owner rules` and `## Session harness` as in steps 3 and 4
+   (`## Secrets`: the template default list; `## Docs layout`: the handoff file and the decisions log in the
+   workspace). Do not add `## Commands`, `## Architecture rules` or `## Test scope`: they belong to each repository.
+4. `working-rules.sh apply <target>`, as in step 8.
+5. `.claude/settings.json` of the workspace, with the Edit tool (the Write tool for a new file), keeping every other
+   key: the `outputStyle` of step 5, and each repository outside the workspace (`inside: false`) in
+   `permissions.additionalDirectories`, with the path from the check. Without it, a session in the workspace cannot
+   read or edit that repository.
+
+   ```json
+   {
+     "outputStyle": "shark:asd-ste100",
+     "permissions": { "additionalDirectories": ["../api", "../web"] }
+   }
+   ```
+
+6. `.gitignore` of the workspace, with the Edit tool (the Write tool for a new file): one line `/<path>/` for each
+   repository inside the workspace, so that the workspace repository does not track it.
+
+### W4. Check
+
+1. `working-rules.sh check <target>` gives `0`.
+2. The target has `## Repositories` one time, with one row for each repository, and one start rule.
+3. `workspace.mjs check <each path of the table>` exits `0`.
+4. `.claude/settings.json` is valid JSON, and `permissions.additionalDirectories` names each repository outside the
+   workspace.
+
+### W5. Each repository
+
+Ask one time: "Set up the project file of each repository now?" For each repository that the user picks, do steps 1
+to 9 with the repository root as the root. Its `## Session harness` names the same harness as the workspace, so that
+there is one start rule. The repository file is complete (Working rules included), because a session can also start
+in the repository alone. Its values win for that repository.
+
+### W6. Report
+
+As in step 9, and also: the workspace folder and whether you ran `git init`, the repositories (path, remote, cloned
+or found), each repository outside the workspace in `additionalDirectories`, the `.gitignore` lines, and the
+repositories that are not set up yet. Tell the user to start the next session in the workspace folder.
+
+Do not commit the files: not in the workspace, and not in a repository.
