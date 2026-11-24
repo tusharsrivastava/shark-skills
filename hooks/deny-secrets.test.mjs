@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { after, describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { decide, readPolicy } from "./deny-secrets.mjs";
@@ -138,6 +138,62 @@ describe("debugger tools", () => {
 
   test("a breakpoint in source code is allowed", () => {
     assert.equal(call(dir, "mcp__mcp-debugger__set_breakpoint", { sessionId: "s1", file: "src/billing/invoice.py", line: 26 }), null);
+  });
+});
+
+describe("multi-repo workspace", () => {
+  // A workspace folder (its own AGENTS.md, no product code) manages repositories inside it and next to it. Before,
+  // the hook read ## Secrets only from the session folder, so a list in a repository's own file never applied.
+  const repoFile = (list) => `# AGENTS.md: repo\n\n## Secrets\n\n- Never read or write: ${list}.\n`;
+  function layout({ workspace = "# AGENTS.md: workspace\n", api = repoFile("`config/prod.yaml`"), web = repoFile("`deploy/keys/**`") } = {}) {
+    const top = mkdtempSync(join(tmpdir(), "shark-ws-"));
+    dirs.push(top);
+    const files = {
+      "ws/AGENTS.md": workspace,
+      "api/.git/HEAD": "ref: refs/heads/main\n",
+      "api/AGENTS.md": api,
+      "ws/web/.git/HEAD": "ref: refs/heads/main\n",
+      "ws/web/AGENTS.md": web,
+    };
+    for (const [name, text] of Object.entries(files)) {
+      mkdirSync(dirname(join(top, name)), { recursive: true });
+      if (text !== null) writeFileSync(join(top, name), text);
+    }
+    return { ws: join(top, "ws"), api: join(top, "api") };
+  }
+  const at = (ws, tool_name, tool_input) => decide({ cwd: ws, tool_name, tool_input }, ws);
+
+  test("a repository next to the workspace applies its own list", () => {
+    const { ws, api } = layout();
+    const hit = at(ws, "Read", { file_path: join(api, "config/prod.yaml") });
+    assert.equal(hit?.pattern, "config/prod.yaml");
+    assert.match(hit.source, /AGENTS\.md/);
+    assert.equal(at(ws, "Read", { file_path: join(api, "src/app.ts") }), null);
+  });
+  test("a repository inside the workspace applies its own list, also by a relative path", () => {
+    const { ws } = layout();
+    assert.equal(at(ws, "Edit", { file_path: "web/deploy/keys/prod.json" })?.pattern, "deploy/keys/**");
+  });
+  test("Bash on a file of another repository is blocked", () => {
+    const { ws } = layout();
+    assert.ok(at(ws, "Bash", { command: "cat ../api/config/prod.yaml" }));
+    assert.equal(at(ws, "Bash", { command: "cat ../api/src/app.ts" }), null);
+  });
+  test("the default list still applies in each repository", () => {
+    const { ws, api } = layout();
+    assert.equal(at(ws, "Read", { file_path: join(api, ".env") })?.pattern, ".env");
+  });
+  test("a repository list applies when the workspace turns its own list off", () => {
+    const { ws, api } = layout({ workspace: repoFile("none") });
+    assert.ok(at(ws, "Read", { file_path: join(api, "config/prod.yaml") }));
+    assert.equal(at(ws, "Read", { file_path: join(ws, ".env") }), null);
+  });
+  test("a repository exception does not open a file that the workspace list names", () => {
+    const { ws, api } = layout({
+      workspace: repoFile("`*.pem`"),
+      api: "# AGENTS.md: api\n\n## Secrets\n\n- Never read or write: `.env`. The only exception: `certs/dev.pem`.\n",
+    });
+    assert.ok(at(ws, "Read", { file_path: join(api, "certs/dev.pem") }));
   });
 });
 
