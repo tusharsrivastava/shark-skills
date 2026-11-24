@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { digest, main, readBudgets, readCommands } from "./health.mjs";
+import { DEFAULT_BUDGETS, delta, digest, functionKeys, main, readBudgets, readCommands } from "./health.mjs";
 
 const SCRIPT = fileURLToPath(new URL("./health.mjs", import.meta.url));
 const SAST = fileURLToPath(new URL("./testdata/fake-sast.mjs", import.meta.url));
@@ -125,6 +125,32 @@ describe("file: complexity delta", () => {
     assert.equal(main(["file", "src/c.py"], dir).code, 0);
     write(dir, { "src/c.py": branches("route", 25) });
     assert.match(main(["file", "src/c.py"], dir).text, /ERROR cx\/ccn/);
+  });
+});
+
+describe("file: anonymous functions", () => {
+  // Lizard names each arrow function and function expression "(anonymous)". A key by name and position among the
+  // anonymous functions pairs the wrong ones when an edit adds one above: an old one-line callback then "grows" to
+  // the complexity of a different function (seen on mikro-orm-8227: `(anonymous)` ccn 1 -> 18).
+  const OLD = ["const a = items.map((x) => {", "  return x;", "});", "const b = rows.filter((r) => {", "  return r.ok && r.live;", "});"];
+  const NEW = ["const z = list.forEach((y) => {", "  if (y) go(y);", "});", ...OLD];
+  const fns = (lines, specs) => specs.map(([start, ccn]) => ({ file: "src/a.ts", name: "(anonymous)", start, end: start + 2, ccn, nloc: 3, params: 1 }));
+  test("an anonymous function keeps its key when another one is added above it", () => {
+    const before = functionKeys(fns(OLD, [[1, 1], [4, 18]]), OLD.join("\n"));
+    const after = functionKeys(fns(NEW, [[1, 2], [4, 1], [7, 18]]), NEW.join("\n"));
+    assert.equal(after[1].key, before[0].key, "items.map callback");
+    assert.equal(after[2].key, before[1].key, "rows.filter callback");
+    assert.ok(!before.some((f) => f.key === after[0].key), "the new callback has a new key");
+  });
+  test("so the delta reports no growth for the shifted callbacks", () => {
+    const budgets = { ...DEFAULT_BUDGETS, "ccn.warn": 10 };
+    const base = { findings: [], functions: functionKeys(fns(OLD, [[1, 1], [4, 18]]), OLD.join("\n")) };
+    const cur = { findings: [], functions: functionKeys(fns(NEW, [[1, 2], [4, 1], [7, 18]]), NEW.join("\n")) };
+    assert.deepEqual(delta(cur, base, { allow: [] }, budgets, "src/a.ts"), []);
+  });
+  test("named functions keep their name keys", () => {
+    const k = functionKeys([{ file: "src/a.ts", name: "route", start: 1, end: 2 }], "function route() {\n}");
+    assert.equal(k[0].key, "src/a.ts::route#0");
   });
 });
 

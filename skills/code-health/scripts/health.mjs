@@ -249,11 +249,26 @@ function writeJson(p, obj) {
   writeFileSync(p, JSON.stringify(obj, null, 1) + "\n");
 }
 
-/** Function keys: file + name + order among the functions of the same name in that file. */
-export function functionKeys(functions) {
+/** The format of the cached analyses. Change it when the function keys or the fingerprints change. */
+const CACHE_FORMAT = "2";
+
+/**
+ * Function keys: file + name + order among the functions of the same name in that file. `source` is the text of the
+ * file, or a function that returns the text of a repo file (for functions of several files).
+ */
+export function functionKeys(functions, source = "") {
+  const texts = new Map();
+  const linesOf = (file) => {
+    if (!texts.has(file)) texts.set(file, String((typeof source === "function" ? source(file) : source) ?? "").split(/\r?\n/));
+    return texts.get(file);
+  };
   const n = new Map();
   return functions.map((f) => {
-    const base = `${f.file}::${f.name}`;
+    const lines = linesOf(f.file);
+    // An anonymous function has no name to follow, so its first line names it: an edit that adds another anonymous
+    // function above it does not move it to a different key.
+    const anon = /^\(?anonymous\)?$/i.test(f.name) ? `@${hash((lines[f.start - 1] ?? "").trim(), 8)}` : "";
+    const base = `${f.file}::${f.name}${anon}`;
     const k = n.get(base) ?? 0;
     n.set(base, k + 1);
     return { ...f, key: `${base}#${k}` };
@@ -295,7 +310,7 @@ function prepareSide(project, relPath, ref, cmds) {
   }
   const blob = git(root, ["rev-parse", "--verify", "-q", `${ref}:${relPath}`])?.trim();
   if (!blob) return { done: EMPTY };
-  const cacheFile = join(cacheDir(project), "cache", `${hash([blob, cmds.join("\n"), rulesStamp(root), JSON.stringify(project.budgets)].join("|"))}.json`);
+  const cacheFile = join(cacheDir(project), "cache", `${hash([CACHE_FORMAT, blob, cmds.join("\n"), rulesStamp(root), JSON.stringify(project.budgets)].join("|"))}.json`);
   if (existsSync(cacheFile)) {
     try {
       return { done: JSON.parse(readFileSync(cacheFile, "utf8")) };
@@ -315,7 +330,7 @@ function finishSide(project, relPath, side, run) {
   const { root } = project;
   const remap = [[side.target, relPath]];
   const read = (f) => (f === relPath ? side.text : existsSync(join(root, f)) ? readFileSync(join(root, f), "utf8") : null);
-  const functions = functionKeys(functionsOf(run.log, { root, remap }).filter((f) => f.file === relPath));
+  const functions = functionKeys(functionsOf(run.log, { root, remap }).filter((f) => f.file === relPath), read(relPath) ?? "");
   const findings = fingerprint(
     flatten(run.log, { root, remap }).filter((f) => f.tool !== "lizard" && (f.file === relPath || !f.file)),
     read,
@@ -478,9 +493,9 @@ export function cmdDiff(project, { base = "HEAD" } = {}) {
     const run = runRow(diffCmds, { base }, { cwd: project.root, budgets: project.budgets });
     if (run.failed) crashed++;
     notVerified.push(...run.errors);
-    const fns = functionKeys(functionsOf(run.log, { root: project.root }));
-    const flat = flatten(run.log, { root: project.root }).filter((f) => f.tool !== "lizard");
     const read = (f) => (existsSync(join(project.root, f)) ? readFileSync(join(project.root, f), "utf8") : null);
+    const fns = functionKeys(functionsOf(run.log, { root: project.root }), read);
+    const flat = flatten(run.log, { root: project.root }).filter((f) => f.tool !== "lizard");
     fingerprint(flat, read, fns);
     for (const f of new Set([...files, ...flat.map((x) => x.file)])) {
       const cur = { findings: flat.filter((x) => x.file === f), functions: fns.filter((x) => x.file === f) };
@@ -522,7 +537,7 @@ function fullFindings(project) {
   const read = (f) => (existsSync(join(project.root, f)) ? readFileSync(join(project.root, f), "utf8") : null);
   if (full) {
     const run = runRow(full, {}, { cwd: project.root, budgets: project.budgets });
-    const fns = functionKeys(functionsOf(run.log, { root: project.root }));
+    const fns = functionKeys(functionsOf(run.log, { root: project.root }), read);
     const flat = fingerprint(flatten(run.log, { root: project.root }), read, fns);
     return { findings: flat, functions: fns, errors: run.errors, failed: run.failed };
   }
