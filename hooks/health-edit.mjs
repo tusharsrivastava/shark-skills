@@ -14,6 +14,10 @@
  * edit with sed or a script. It fails open: when the analyzer is missing, crashes or times out, it says "not
  * verified" one time for each session, then stays silent.
  *
+ * In a multi-repo workspace, each repository's own project file decides: an edit is checked with the commands, the
+ * budgets and the git base of the repository that holds the file. After a Bash call it checks the session folder and
+ * each repository in the `## Repositories` table of the workspace project file.
+ *
  * `hook.edit` (AGENTS.md › Quality budgets): `async` (the default) runs in the background and wakes the agent with
  * the digest (exit 2, stderr); `on` runs before the next step (additionalContext, about 2 s for each edit); `off`.
  * hooks.json registers this script two times: plain for `on`, with `--async` (async, asyncRewake) for `async`.
@@ -21,7 +25,7 @@
 import { spawnSync } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HEALTH = fileURLToPath(new URL("../skills/code-health/scripts/health.mjs", import.meta.url));
@@ -89,6 +93,19 @@ export function changedSince(root, since, isSource) {
   return out.slice(0, MAX_BASH_FILES);
 }
 
+/** The repository roots in the `## Repositories` table of a workspace project file (the Path column). */
+export function workspaceRepos(project) {
+  const m = /^## Repositories\s*$([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(project.text || "");
+  if (!m) return [];
+  const roots = [];
+  for (const line of m[1].split("\n")) {
+    const cells = line.split("|").map((c) => c.trim());
+    const path = /^`([^`]+)`$/.exec(cells[2] ?? "")?.[1];
+    if (path && !path.startsWith("<")) roots.push(resolve(project.root, path));
+  }
+  return roots;
+}
+
 /** Appends one line to `.git/shark-health/events.log`: what the hook told the agent (never in a diff). */
 function logEvent(project, entry) {
   if (!project.gitDir) return;
@@ -109,77 +126,105 @@ export async function decide(input, { now = Date.now(), async: isAsync = false }
   if (!EDIT_TOOLS.has(tool) && tool !== "Bash") return null;
   if (input.agent_type && !AGENTS.test(input.agent_type)) return null;
   const h = await health();
-  const project = h.loadProject(input.cwd || process.cwd());
-  if (!h.optedIn(project.text)) return null;
-  const mode = String(project.budgets["hook.edit"] ?? "async").toLowerCase();
-  if (mode === "off" || (mode === "async") !== isAsync) return null;
-
-  const sf = stateFile(input.session_id);
-  const state = loadState(sf);
-  const save = () => writeFileSync(sf, JSON.stringify(state));
-  if (!state.base) {
-    state.base = git(project.root, ["rev-parse", "HEAD"]).trim() || "HEAD";
-    state.since = now - 120000;
-  }
+  const session = h.loadProject(input.cwd || process.cwd());
+  const active = (project) => {
+    if (!h.optedIn(project.text)) return false;
+    const mode = String(project.budgets["hook.edit"] ?? "async").toLowerCase();
+    return mode !== "off" && (mode === "async") === isAsync;
+  };
   const isSource = (p) => h.SOURCE_EXT.test(p);
 
-  let files = [];
+  // An edit: the repository that holds the file. A Bash call: the session folder and the workspace repositories.
+  let candidates;
+  let editRel = null;
   let near = [];
   if (EDIT_TOOLS.has(tool)) {
     const p = input.tool_input?.file_path;
     if (!p) return null;
-    const abs = isAbsolute(p) ? p : resolve(input.cwd || project.root, p);
+    const abs = isAbsolute(p) ? p : resolve(input.cwd || session.root, p);
     if (!existsSync(abs)) return null;
+    const own = h.loadProject(dirname(abs));
+    const project = own.gitDir ? own : session;
     const rel = relative(realpathSync(project.root), realpathSync(abs)).split("\\").join("/");
     if (rel.startsWith("..") || !isSource(rel)) return null;
-    files = [rel];
+    candidates = [project];
+    editRel = rel;
     near = editedLines(readFileSync(abs, "utf8"), input.tool_input);
   } else {
-    files = changedSince(project.root, state.since, isSource);
+    const roots = [session.root, ...workspaceRepos(session)].filter((r) => existsSync(r));
+    const seen = new Set();
+    candidates = [];
+    for (const r of roots) {
+      const project = r === session.root ? session : h.loadProject(r);
+      const key = realpathSync(project.root);
+      if (!seen.has(key)) seen.add(key) && candidates.push(project);
+    }
+  }
+  const projects = candidates.filter(active);
+  if (!projects.length) return null;
+
+  const sf = stateFile(input.session_id);
+  const state = loadState(sf);
+  const save = () => writeFileSync(sf, JSON.stringify(state));
+  state.bases ??= {};
+  const since = state.since ?? now - 120000;
+  const work = [];
+  for (const project of projects) {
+    const key = realpathSync(project.root);
+    state.bases[key] ??= git(project.root, ["rev-parse", "HEAD"]).trim() || "HEAD";
+    const files = editRel ? [editRel] : changedSince(project.root, since, isSource);
+    if (files.length) work.push({ project, base: state.bases[key], files });
   }
   state.since = now;
   save();
-  if (!files.length) return null;
+  if (!work.length) return null;
   const t0 = Date.now();
-  logEvent(project, { session: input.session_id ?? null, tool, mode, files, kind: "start" });
+  for (const w of work) logEvent(w.project, { session: input.session_id ?? null, tool, files: w.files, kind: "start" });
 
   const texts = [];
   const notVerified = [];
   const told = new Set(state.told ?? []);
-  let retold = 0;
+  const retold = new Map();
   const deadline = Date.now() + budgetMs(isAsync);
-  for (const rel of files) {
-    const left = deadline - Date.now();
-    if (left < 1000) {
-      notVerified.push(`${rel}: no time left`);
-      break;
+  outer: for (const w of work) {
+    for (const rel of w.files.slice(0, MAX_BASH_FILES)) {
+      const left = deadline - Date.now();
+      if (left < 1000) {
+        notVerified.push(`${rel}: no time left`);
+        break outer;
+      }
+      const r = h.cmdFile(w.project, rel, { base: w.base, near, timeoutMs: left });
+      // In a workspace, a path names its repository folder, so the agent knows where the file is.
+      const scope = projects.length > 1 || w.project !== session ? join(relative(session.root, w.project.root), rel).split("\\").join("/") : rel;
+      if (r.code === h.EXIT.NEW && r.findings?.length) {
+        // The base is the commit at the start of the session, so a finding stays new until it is fixed. Tell each
+        // finding one time: the agent has it, and fixes it or accepts it (`baseline allow`).
+        const fresh = r.findings.filter((f) => !told.has(f.fp));
+        retold.set(w.project, (retold.get(w.project) ?? 0) + r.findings.length - fresh.length);
+        if (fresh.length) texts.push(h.digest(fresh, { scope, budgets: w.project.budgets, notVerified: r.notVerified ?? [], near }));
+        for (const f of fresh) told.add(f.fp);
+      } else notVerified.push(...(r.notVerified ?? [])); // a failed analyzer, also when another one ran clean
     }
-    const r = h.cmdFile(project, rel, { base: state.base, near, timeoutMs: left });
-    if (r.code === h.EXIT.NEW && r.findings?.length) {
-      // The base is the commit at the start of the session, so a finding stays new until it is fixed. Tell each
-      // finding one time: the agent has it, and fixes it or accepts it (`baseline allow`).
-      const fresh = r.findings.filter((f) => !told.has(f.fp));
-      retold += r.findings.length - fresh.length;
-      if (fresh.length) texts.push(h.digest(fresh, { scope: rel, budgets: project.budgets, notVerified: r.notVerified ?? [], near }));
-      for (const f of fresh) told.add(f.fp);
-    } else notVerified.push(...(r.notVerified ?? [])); // a failed analyzer, also when another one ran clean
   }
   state.told = [...told];
   save();
-  const event = { session: input.session_id ?? null, agent: input.agent_type ?? "main", tool, mode, files, ms: Date.now() - t0 };
-  if (texts.length) {
-    logEvent(project, { ...event, kind: "digest", text: texts.join("\n\n"), ...(retold ? { retold } : {}) });
-    return { context: texts.join("\n\n") };
-  }
-  if (notVerified.length && !state.warned) {
+  const context = texts.length
+    ? texts.join("\n\n")
+    : notVerified.length && !state.warned
+      ? `code-health: not verified (${notVerified.join("; ")}). Say "code-health: not verified" in your report.`
+      : null;
+  if (!texts.length && context) {
     state.warned = true;
     save();
-    const context = `code-health: not verified (${notVerified.join("; ")}). Say "code-health: not verified" in your report.`;
-    logEvent(project, { ...event, kind: "not-verified", text: context });
-    return { context };
   }
-  logEvent(project, { ...event, kind: retold ? "told" : "clean", ...(retold ? { retold } : {}) });
-  return null;
+  for (const w of work) {
+    const n = retold.get(w.project) ?? 0;
+    const mode = String(w.project.budgets["hook.edit"] ?? "async").toLowerCase();
+    const event = { session: input.session_id ?? null, agent: input.agent_type ?? "main", tool, mode, files: w.files, ms: Date.now() - t0, ...(n ? { retold: n } : {}) };
+    const kind = texts.length ? "digest" : context ? "not-verified" : n ? "told" : "clean";
+    logEvent(w.project, { ...event, kind, ...(context ? { text: context } : {}) });
+  }
+  return context ? { context } : null;
 }
 
 function main() {

@@ -29,8 +29,8 @@ function agents({ cmd = `\`node ${TD}fake-sast.mjs {file}\` and \`node ${TD}fake
   return `# AGENTS.md\n\n## Commands\n\n| Key | Command | Note |\n| --- | --- | --- |\n| \`analyze:file\` | ${cmd} | |\n\n${budgets}`;
 }
 
-function repo(agentsText = agents()) {
-  const dir = tmp();
+function repo(agentsText = agents(), dir = tmp()) {
+  mkdirSync(dir, { recursive: true });
   git(dir, "init", "-q", "-b", "main");
   git(dir, "config", "user.email", "t@example.com");
   git(dir, "config", "user.name", "t");
@@ -136,6 +136,43 @@ describe("each finding is told one time for each session", () => {
     write(dir, { "src/q.py": UNSAFE });
     assert.ok(await decide(edit(dir, "src/q.py", { session_id: `a-${process.pid}` })));
     assert.ok(await decide(edit(dir, "src/q.py", { session_id: `b-${process.pid}` })));
+  });
+});
+
+describe("multi-repo workspace", () => {
+  // <parent>/ws is the workspace (its own git repository, no Commands); <parent>/api and <parent>/web sit next to it.
+  function workspace() {
+    const parent = tmp();
+    const ws = repo(`# AGENTS.md: demo workspace\n\n## Repositories\n\n| Name | Path | Remote | Role |\n| --- | --- | --- | --- |\n| api | \`../api\` | none | API |\n| web | \`../web\` | none | UI |\n`, join(parent, "ws"));
+    const api = repo(agents(), join(parent, "api"));
+    const web = repo(null, join(parent, "web"));
+    return { ws, api, web };
+  }
+
+  test("an Edit in a repository next to the workspace uses that repository's project file", async () => {
+    const { ws, api } = workspace();
+    write(api, { "src/q.py": UNSAFE });
+    const r = await decide({ ...edit(api, "src/q.py"), cwd: ws });
+    assert.match(r?.context ?? "", /sec\/sql-string-concat/);
+    assert.match(r.context, /\.\.\/api\/src\/q.py/, "the path names the repository folder");
+    const log = readFileSync(join(api, ".git/shark-health/events.log"), "utf8");
+    assert.match(log, /"kind":"digest"/, "the event goes to the log of that repository");
+  });
+
+  test("an Edit in a repository that did not opt in is silent", async () => {
+    const { ws, web } = workspace();
+    write(web, { "src/q.py": UNSAFE });
+    assert.equal(await decide({ ...edit(web, "src/q.py"), cwd: ws }), null);
+  });
+
+  test("a Bash command in the workspace checks the repositories in ## Repositories", async () => {
+    const { ws, api } = workspace();
+    const bash = { session_id: `wsbash-${process.pid}`, hook_event_name: "PostToolUse", cwd: ws, tool_name: "Bash", tool_input: { command: "cd ../api && sed -i ..." } };
+    assert.equal(await decide(bash, { now: Date.now() }), null, "nothing changed yet");
+    await new Promise((r) => setTimeout(r, 20));
+    write(api, { "src/q.py": UNSAFE });
+    const r = await decide(bash, { now: Date.now() + 10 });
+    assert.match(r?.context ?? "", /sec\/sql-string-concat/);
   });
 });
 

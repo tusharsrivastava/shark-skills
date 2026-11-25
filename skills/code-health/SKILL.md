@@ -17,6 +17,8 @@ that changes a file). It prints nothing when nothing is new. When something is n
 `hook.edit: async` (the default) the check runs in the background and the digest reaches you as hook feedback, at
 the latest when you try to stop; with `on` it reaches you before your next step. The hook tells each finding one
 time in a session. A finding that you keep stays new: `health.mjs diff` lists it again, and your report names it.
+In a multi-repo workspace, the project file of the repository that holds the file decides (its `analyze:*` commands,
+budgets and git base). After a Bash command, the hook checks the repositories in `## Repositories` too.
 
 ```text
 code-health: 2 new in src/billing/invoice.py (budget: ccn 10)
