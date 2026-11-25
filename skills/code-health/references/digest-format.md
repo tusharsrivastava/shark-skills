@@ -13,12 +13,13 @@ code-health: <n> new in <file, or "the diff"> (budget: ccn <ccn.warn>)
 +<n> more. Not verified: <items, or none>.
 ```
 
-- New findings only, sorted by severity, then by distance from the edited lines.
+- New findings only, sorted by severity, then by file and line (`health.mjs file --near <lines>`: by distance from
+  those lines).
 - At most `digest.max_findings` findings (default 5) and 1,500 characters. Above the cap, only the count shows
   (`+N more`). The full list is in `.git/shark-health/last-health.sarif`, which is never part of a diff.
 - No code snippet: the agent already has the file.
 - The last line always says what was not verified, so a report stays honest.
-- About 375 tokens for a full digest. A clean edit costs 0.
+- About 375 tokens for a full digest. A clean review costs 0: it prints nothing.
 
 ## Rule names and levels
 
@@ -39,5 +40,6 @@ code-health: <n> new in <file, or "the diff"> (budget: ccn <ccn.warn>)
 - **Complexity.** Each function is keyed by file, name and its order among same-name functions in the file. A
   finding is new when a function is new and over a budget, or when an over-budget metric of a function grows. A
   renamed function counts as new.
-- **Base commit.** The edit hook uses HEAD at the first edit of the session. `diff` and `compare` take `--base`.
+- **Base commit.** The review hook uses HEAD at the session start (recorded by its SessionStart entry), or HEAD
+  at the first review when the session has no record. `file`, `diff` and `compare` take `--base`.
   The analysis of each file at the base is cached by its git blob in `.git/shark-health/cache/`.

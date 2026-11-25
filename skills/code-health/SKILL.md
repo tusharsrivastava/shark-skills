@@ -1,6 +1,6 @@
 ---
 name: code-health
-description: New security, complexity and architecture findings while you write code - how to read a code-health digest after an edit, fix it or accept it on purpose, and run the check for a diff. Use with shark:code-authoring when you write or correct code in a project whose AGENTS.md has analyze rows.
+description: New security, complexity and architecture findings in your changes - how to read the code-health review that blocks your stop when you finish, fix each finding or accept it on purpose, and run the check for a diff. Use with shark:code-authoring when you write or correct code in a project whose AGENTS.md has analyze rows.
 ---
 
 # Code health
