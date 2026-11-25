@@ -16,8 +16,8 @@ The shark hook `health-review` reviews your work when you end it, like a code re
 or when `shark:code-writer` or `shark:lead-engineer` ends, it runs `analyze:file` on each source file that changed
 since the session started (also changes that you committed), and compares each file with its version at that commit.
 It prints nothing when nothing is new. When something is new, it stops you from ending and gives you a digest. You
-get each finding one time in a session, and at most 3 reviews block in one session. When no file changed since the
-last review, it only runs `git`. In a multi-repo workspace it reviews each repository in `## Repositories`, with the
+get each finding one time in a session, and at most 3 reviews block in one session. A later review checks only the
+files that changed since their last review; when none changed, it only runs `git`. In a multi-repo workspace it reviews each repository in `## Repositories`, with the
 project file of that repository (its `analyze:*` commands and budgets). `hook.review: off` turns it off.
 
 ```text

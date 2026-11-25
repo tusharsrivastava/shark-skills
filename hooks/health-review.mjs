@@ -7,7 +7,8 @@
  * commit. When there are new findings that the agent was not told yet, it blocks the stop and gives the digest as
  * the reason: the agent fixes each finding or accepts it on purpose (`health.mjs baseline allow`), then stops
  * again. A finding is told one time for each session, and a session gets at most MAX_BLOCKS blocks, so the review
- * cannot loop. When nothing changed since the last review, it only runs `git` (milliseconds).
+ * cannot loop. A later review checks only the files that changed since their last review; when none changed, it
+ * only runs `git` (milliseconds).
  *
  * `node health-review.mjs start` (SessionStart) records the commit of each repository at the session start: the
  * base of the review, so changes that the agent commits are reviewed too. Without that record, the base is the commit
@@ -133,18 +134,14 @@ export function changed(root, base, isSource) {
     .map(([p]) => p);
 }
 
-/** A short text that changes when one of the files changes: no new review when it is the same. */
-function signature(root, files) {
-  return files
-    .map((p) => {
-      try {
-        const s = statSync(join(root, p));
-        return `${p}:${s.size}:${s.mtimeMs}`;
-      } catch {
-        return `${p}:gone`;
-      }
-    })
-    .join("|");
+/** A short text that changes when the file changes: a file with the same text as at its last review is skipped. */
+function signature(root, p) {
+  try {
+    const s = statSync(join(root, p));
+    return `${s.size}:${s.mtimeMs}`;
+  } catch {
+    return "gone";
+  }
 }
 
 /** Appends one line to `.git/shark-health/events.log`: what the hook told the agent (never in a diff). */
@@ -182,14 +179,16 @@ export async function review(input, { budgetMs = BUDGET_MS } = {}) {
 
   const state = loadState(sid);
   state.bases ??= {};
-  state.sigs ??= {};
+  state.reviewed ??= {};
   const isSource = (p) => h.SOURCE_EXT.test(p);
   const work = [];
   for (const { project, key } of active) {
     state.bases[key] ??= git(project.root, ["rev-parse", "HEAD"]).trim() || "HEAD";
-    const files = changed(project.root, state.bases[key], isSource);
-    const sig = signature(project.root, files);
-    if (files.length && state.sigs[key] !== sig) work.push({ project, key, files, sig, base: state.bases[key] });
+    // Only the files that changed since their last review: a reviewed finding is claimed, so a file that did not
+    // change has nothing new to tell.
+    const seen = (state.reviewed[key] ??= {});
+    const files = changed(project.root, state.bases[key], isSource).filter((p) => seen[p] !== signature(project.root, p));
+    if (files.length) work.push({ project, key, files, base: state.bases[key] });
   }
   saveState(sid, state);
   if (!work.length) return null;
@@ -206,14 +205,13 @@ export async function review(input, { budgetMs = BUDGET_MS } = {}) {
   let retold = 0;
   for (const w of work) {
     logEvent(w.project, { session: sid ?? null, event, agent, files: w.files, kind: "start" });
-    let complete = true;
     for (const rel of w.files) {
       const left = deadline - Date.now();
       if (left < 1000) {
         notVerified.push(`${w.files.slice(w.files.indexOf(rel)).length} file(s) from ${rel}: no time left`);
-        complete = false;
         break;
       }
+      const sig = signature(w.project.root, rel);
       const r = h.cmdFile(w.project, rel, { base: w.base, timeoutMs: left });
       // In a workspace, a path names its repository folder, so the agent knows where the file is.
       const scope = w.project === session ? rel : join(relative(session.root, w.project.root), rel).split("\\").join("/");
@@ -221,12 +219,10 @@ export async function review(input, { budgetMs = BUDGET_MS } = {}) {
         const fresh = r.findings.filter((f) => claim(sid, f.fp));
         retold += r.findings.length - fresh.length;
         if (fresh.length) texts.push(h.digest(fresh, { scope, budgets: w.project.budgets, notVerified: r.notVerified ?? [] }));
-      } else if (r.code !== h.EXIT.CLEAN || r.notVerified?.length) {
-        notVerified.push(...(r.notVerified ?? []));
-        complete = false;
       }
+      if ((r.code === h.EXIT.CLEAN || r.code === h.EXIT.NEW) && !r.notVerified?.length) state.reviewed[w.key][rel] = sig;
+      else notVerified.push(...(r.notVerified ?? []));
     }
-    if (complete) state.sigs[w.key] = w.sig;
   }
 
   let reason = null;

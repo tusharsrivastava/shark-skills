@@ -89,6 +89,18 @@ describe("the review at the end of the work", () => {
     assert.equal(log(dir).length, before, "the second stop did not run the analyzers");
   });
 
+  test("a second review checks only the files that changed since the first review", async () => {
+    const dir = repo();
+    write(dir, { "src/q.py": UNSAFE, "src/other.py": SAFE + "# other\n" });
+    const input = stop(dir);
+    assert.ok((await review(input))?.block);
+    write(dir, { "src/q.py": SAFE + "# fixed\n" });
+    assert.equal(await review({ ...input, stop_hook_active: true }), null);
+    const checked = log(dir).filter((e) => e.kind !== "start").map((e) => e.files);
+    assert.deepEqual([...checked[0]].sort(), ["src/other.py", "src/q.py"]);
+    assert.deepEqual(checked[1], ["src/q.py"], "only the file that the agent changed after the first review");
+  });
+
   test("a finding that was told is not told again; a new one is", async () => {
     const dir = repo();
     write(dir, { "src/q.py": UNSAFE });
