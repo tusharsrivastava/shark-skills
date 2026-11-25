@@ -1,7 +1,6 @@
 ---
 name: cookbook-writing
 description: Method and style for a cookbook tutorial chapter. One story, each term taught as a plain idea first, reading levels checked by a script. Use when you write or review a tutorial or onboarding document.
-allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
 # Cookbook writing

@@ -132,6 +132,38 @@ When a skill says "run `gate:fast`", this is the line it runs.
 > orchestration loop? Keep it in charge, and **shark** stays on call.
 
 <details>
+<summary>Several repositories? Set up a multi-repo workspace</summary>
+
+Run `/shark:init` in a folder that isn't a git repository, and it offers to set it up as a **workspace**: one place
+for the shared rules of several repositories. The repositories can live inside the workspace or next to it.
+
+```text
+work/
+  acme-ws/          ← run /shark:init here, start your sessions here
+    AGENTS.md       ← shared rules + a Repositories table
+    .claude/settings.json
+  api/              ← its own AGENTS.md: commands, gates, secrets (wins for api/)
+  web/
+```
+
+It will:
+
+- `git init` the workspace (no remote), so its shared files have a history
+- Ask for the repositories: in an empty workspace, give it the folder paths (like `../api`) or git URLs to clone into
+  the workspace. In a folder that already holds repositories, it finds them and asks which ones to manage
+- Write the workspace `AGENTS.md`: a `## Repositories` table (name, path, remote, role), the rules that cross
+  repositories, the session harness and the working rules
+- Add each repository outside the workspace to `permissions.additionalDirectories` in `.claude/settings.json`, so a
+  session in the workspace can read and edit it, and add each repository inside it to `.gitignore`
+- Offer to run the normal setup on each repository. A repository's own file wins for its commands and gates, so it
+  still works when you open it alone
+
+The hooks know the layout: `deny-secrets` applies the workspace list and the list of the repository that holds each
+file, and `wide-commits` checks the repository that a `cd` before `gh pr create` names.
+
+</details>
+
+<details>
 <summary>Prefer to set it up by hand?</summary>
 
 Copy [`AGENTS.md`](AGENTS.md) to your repo root and fill in the sections at the top. Already have a `CLAUDE.md`?
@@ -281,7 +313,8 @@ production-scale systems, distilled into this setup.
 - **[/shark:init](./skills/init/SKILL.md)**: Set up a project once. Brings your `AGENTS.md` or `CLAUDE.md` in line
   with the **shark** template, so every session starts with the operator, or with your own orchestrator if you keep
   it. Sets the `shark:asd-ste100` output style for the project. Checks and sets up the debugger and code-health tools
-  for each language (`skills/init/scripts/doctor.mjs`, which you can run again at any time).
+  for each language (`skills/init/scripts/doctor.mjs`, which you can run again at any time). In a folder that isn't a
+  repository, sets up a multi-repo workspace for the repositories you name.
 - **[/shark:operator](./skills/operator/SKILL.md)**: Run the session. Sets the mode, writes the briefs, routes the
   work to agents, and checks what comes back. Loads by itself after `/shark:init`.
 - **[/shark:handoff](./skills/handoff/SKILL.md)**: Record and prune the handoff file, so the next session picks up
@@ -355,7 +388,8 @@ production-scale systems, distilled into this setup.
 
 - **[deny-secrets hook](./hooks/deny-secrets.mjs)**: Refuses Read, Edit, Write, Grep and Bash calls on the secret
   files that your `## Secrets` section lists (`.env`, `*.pem` and similar by default). Example files
-  (`.env.example` and similar) always stay readable, so agents still learn the setting names.
+  (`.env.example` and similar) always stay readable, so agents still learn the setting names. In a workspace, the
+  list of the repository that holds a file applies too.
 - **[wide-commits hook](./hooks/wide-commits.mjs)**: Before `gh pr create`, asks you when a commit of the branch
   changes 6 or more files (lock files and pure renames do not count). Set `SHARK_WIDE_COMMIT_FILES` to change the
   limit, or to `0` to turn it off.

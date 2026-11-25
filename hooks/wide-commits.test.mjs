@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { after, describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { decide } from "./wide-commits.mjs";
@@ -58,6 +58,16 @@ describe("decide", () => {
     assert.notEqual(decide(bash(dir, "gh pr create --base main --fill"), {}), null);
     assert.equal(decide(bash(dir, "gh pr create --fill"), { SHARK_WIDE_COMMIT_FILES: "7" }), null);
     assert.equal(decide(bash(dir, "gh pr create --fill"), { SHARK_WIDE_COMMIT_FILES: "0" }), null);
+  });
+
+  test("in a multi-repo workspace, a cd before gh pr create names the repository", () => {
+    // The session folder is the workspace; the pull request opens in a repository inside it or next to it.
+    const api = repo(6);
+    const ws = mkdtempSync(join(dirname(api), "wide-commits-ws-"));
+    dirs.push(ws);
+    assert.notEqual(decide(bash(ws, `cd ../${basename(api)} && gh pr create --fill`), {}), null);
+    assert.notEqual(decide(bash(ws, `cd "${api}"; git push -u origin work; gh pr create --fill`), {}), null);
+    assert.equal(decide(bash(ws, "gh pr create --fill"), {}), null, "no cd: the workspace itself");
   });
 
   test("outside a repository the call continues", () => {
