@@ -1,5 +1,5 @@
 {
-  "description": "shark: refuse each tool call on the secret files that the project's ## Secrets section names; ask before a pull request with a wide commit; report new code-health findings after an edit",
+  "description": "shark: refuse each tool call on the secret files that the project's ## Secrets section names; ask before a pull request with a wide commit; review the new code-health findings when the agent ends its work",
   "hooks": {
     "PreToolUse": [
       {
@@ -42,21 +42,45 @@
         ]
       }
     ],
-    "PostToolUse": [
+    "SessionStart": [
       {
-        "matcher": "Edit|MultiEdit|Write|Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/health-edit.mjs\"",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/health-review.mjs",
+              "start"
+            ],
             "timeout": 10
-          },
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/health-edit.mjs\" --async",
-            "async": true,
-            "asyncRewake": true,
-            "timeout": 30
+            "command": "node",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/health-review.mjs"
+            ],
+            "timeout": 180
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/health-review.mjs"
+            ],
+            "timeout": 180
           }
         ]
       }

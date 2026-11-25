@@ -98,7 +98,7 @@ Examples (keep the ones that apply):
 | `params.warn` | 5 | Parameter count. |
 | `security.block` | `error` | The SARIF level of a security finding that blocks the merge. |
 | `digest.max_findings` | 5 | The most findings in one digest. |
-| `hook.edit` | `async` | The digest after each edit: `async` (in the background; the agent gets it before it stops), `on` (before its next step; about 2 s for each edit) or `off`. |
+| `hook.review` | `on` | The review when the agent ends its work: the digest of the new findings in the session's changes. `on` or `off`. |
 
 ## Test scope
 

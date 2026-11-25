@@ -5,4 +5,4 @@ match: "contains"
 pattern: "\"kind\":\"not-verified\"[^\\n]*opengrep-not-installed"
 ---
 
-The hook failed open: it named the missing analyzer, one time, and did not block.
+The review failed open: it named the missing analyzer one time, then let the agent stop.

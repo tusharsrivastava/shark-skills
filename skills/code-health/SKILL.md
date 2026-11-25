@@ -10,15 +10,15 @@ A project that opts in names its analyzers in AGENTS.md (`## Commands`: `analyze
 **new**: a finding that is not in the committed baseline, not allowed on purpose, and not in the file at the commit
 where your session started. Old debt never shows. AGENTS.md wins over a rule here.
 
-## 1. After each edit: the digest
+## 1. When you finish: the review
 
-The shark hook `health-edit` runs `analyze:file` on each source file that you change (Edit, Write, or a Bash command
-that changes a file). It prints nothing when nothing is new. When something is new, you get a digest. With
-`hook.edit: async` (the default) the check runs in the background and the digest reaches you as hook feedback, at
-the latest when you try to stop; with `on` it reaches you before your next step. The hook tells each finding one
-time in a session. A finding that you keep stays new: `health.mjs diff` lists it again, and your report names it.
-In a multi-repo workspace, the project file of the repository that holds the file decides (its `analyze:*` commands,
-budgets and git base). After a Bash command, the hook checks the repositories in `## Repositories` too.
+The shark hook `health-review` reviews your work when you end it, like a code reviewer. When the main session stops,
+or when `shark:code-writer` or `shark:lead-engineer` ends, it runs `analyze:file` on each source file that changed
+since the session started (also changes that you committed), and compares each file with its version at that commit.
+It prints nothing when nothing is new. When something is new, it stops you from ending and gives you a digest. You
+get each finding one time in a session, and at most 3 reviews block in one session. When no file changed since the
+last review, it only runs `git`. In a multi-repo workspace it reviews each repository in `## Repositories`, with the
+project file of that repository (its `analyze:*` commands and budgets). `hook.review: off` turns it off.
 
 ```text
 code-health: 2 new in src/billing/invoice.py (budget: ccn 10)
@@ -33,7 +33,7 @@ code-health: 2 new in src/billing/invoice.py (budget: ccn 10)
 
 Treat a digest like a failing test:
 
-1. **Fix it in your next step.** An `ERROR` is a defect that you made. Fix the code, not the rule. The fix hint
+1. **Fix it before you finish.** An `ERROR` is a defect that you made. Fix the code, not the rule. The fix hint
    names the safe form. For complexity, use [references/complexity-playbook.md](references/complexity-playbook.md).
 2. **Or accept it on purpose**, only when the finding is a false positive or the brief asks for this exact code:
 
@@ -52,9 +52,10 @@ that crossed the complexity budget because you added a branch).
 `code-health: not verified (...)` means that an analyzer is missing, crashed or timed out. Continue, and write
 "code-health: not verified" with the reason in your report. Never report the code as checked.
 
-## 2. Before you report: the diff check
+## 2. Your report, and the check by hand
 
-Run the check for all your changes, once, before your report:
+The review in §1 runs by itself. Run the same check by hand only when `hook.review` is `off`, or to check a branch
+(for example before a merge):
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT:-<directory of this skill>/../..}/skills/code-health/scripts/health.mjs" diff --base <the commit where your work started>
@@ -95,8 +96,8 @@ Commands, and run `health.mjs rules add` to copy the starter rules of this skill
   PyPI (a malicious package uses the name). Keep
   `--disable-version-check`. Do not use `--experimental`: in 1.33.1 it found nothing on the starter rules.
 - One Opengrep 1.x scan of one file takes about 2 s, mostly start-up (p95 2.2 to 2.3 s, measured 2026-11-21). Shark
-  scans the file and its base version in parallel. Because this is over the 2 s target, `hook.edit` is `async` by
-  default; set `on` to get each digest before the next step, at about 2 s for each edit.
+  scans the file and its base version in parallel. The review runs one time when you finish, not after each edit:
+  per-edit checks cost tokens and wake-ups and changed no result in the cost check (2026-11-25).
 - Use `lizard --csv`: the XML format has no end line and no parameter count.
 - Write your own rules ([references/rule-authoring.md](references/rule-authoring.md)). Never copy rules from the
   Semgrep registry: their license does not allow distribution.

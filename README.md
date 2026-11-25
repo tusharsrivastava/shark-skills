@@ -343,8 +343,8 @@ production-scale systems, distilled into this setup.
   `lead-engineer`: regression safety with a test baseline, scope, test first, logging, comments.
 - **[/shark:solution-spec](./skills/solution-spec/SKILL.md)**: Close a spec before a Sonnet writer builds it: the
   guards on the path, a behaviour table with a test for each row, the decisions, an adversarial check.
-- **[/shark:code-health](./skills/code-health/SKILL.md)**: New security, complexity and architecture findings after
-  each edit, from the analyzers that AGENTS.md names (Opengrep, Lizard, any SARIF tool), against a committed baseline.
+- **[/shark:code-health](./skills/code-health/SKILL.md)**: A review of the new security, complexity and architecture
+  findings when the agent ends its work, from the analyzers that AGENTS.md names (Opengrep, Lizard, any SARIF tool), against a committed baseline.
 
 **Agents**
 

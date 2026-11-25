@@ -9,7 +9,7 @@ This skill makes the project file of a repository follow the shark template, and
 shark hooks, guards and debugger need in this project. Run it one time for each project. Run it again after a kit
 update: a second run on an unchanged template changes nothing.
 
-The plugin loads its hooks (`deny-secrets`, `wide-commits`, `health-edit`) and its MCP server (`mcp-debugger`) by
+The plugin loads its hooks (`deny-secrets`, `wide-commits`, `health-review`) and its MCP server (`mcp-debugger`) by
 itself. They work only when the project gives them what they read: the `## Secrets` lists, the `analyze:*` rows,
 the rules in `.shark/rules/`, a debug adapter for each language. The check script `doctor.mjs` (step 6) finds what is
 missing and gives the pinned fix for each item.

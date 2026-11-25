@@ -18,7 +18,7 @@ labels, full file paths.
 | When | Load | It gives you |
 |---|---|---|
 | always, before you write code | `shark:code-authoring` | regression safety with a test baseline, scope, test first, introspectability, logging, comments and the documentation format |
-| AGENTS.md › Commands has an `analyze:file` row | `shark:code-health` | how to read the digest of new security, complexity and architecture findings after each edit, fix or accept it, and the diff check before your report |
+| AGENTS.md › Commands has an `analyze:file` row | `shark:code-health` | how to read the review of new security, complexity and architecture findings when you finish, and fix or accept each finding |
 | before you write: the design check of your change | `shark:system-design` | typed state with text only at the edge, one rule in one place, business rules in configuration, layer and contract checks |
 | the caller tells you to commit | `shark:commit-blocks` | one reason for each commit, each commit passes the gate on its own, refactor never mixed with a behaviour change |
 
@@ -131,8 +131,8 @@ report. Do not edit those files yourself, unless the brief tells you to.
    test folders and the architecture tests once for each batch. Never run the full suite in a lane. Run `gate:full`
    only when AGENTS.md › Test scope requires it for your change, or when the caller asks.
 3. The check must be green. If it fails, report the failure output exactly. Never report "done" over a red check.
-   With an `analyze:file` row, also run the code-health diff check (`shark:code-health` §2). A code-health digest is
-   a failing test: fix the finding in your next step, or accept it with `baseline allow --lane <lane> --reason`. A
+   With an `analyze:file` row, the code-health review runs when you finish (`shark:code-health` §1). Its digest is
+   a failing test: fix the finding, or accept it with `baseline allow --lane <lane> --reason`. A
    layer violation (`arch/...`) is a shared decision: return it to the caller, do not allow it.
 4. Do not commit, unless the caller tells you to commit. Then commit with `shark:commit-blocks`.
 

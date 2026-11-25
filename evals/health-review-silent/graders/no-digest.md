@@ -5,4 +5,4 @@ match: "not_contains"
 pattern: "\"kind\":\"(digest|not-verified)\""
 ---
 
-A clean edit on a file whose only finding is old debt gives no code-health text at all.
+A clean change to a file whose only finding is old debt gives no code-health text at all.

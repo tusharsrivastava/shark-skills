@@ -261,7 +261,7 @@ export function checkCodeHealth(root, langs, { env = process.env, smoke = true }
     : item("code-health", "baseline", "missing", "no committed baseline: each session then compares with its start commit", {
       kind: "run", command: `node "${join(PLUGIN_ROOT, "skills/code-health/scripts/health.mjs")}" baseline record`, scope: "project (commit the file)",
     }));
-  items.push(item("code-health", "hook.edit", "ok", `${project.budgets["hook.edit"]}${project.budgets["hook.edit"] === "async" ? " (the default: the digest reaches the agent before it stops)" : ""}`));
+  items.push(item("code-health", "hook.review", "ok", `${project.budgets["hook.review"]}${project.budgets["hook.review"] === "on" ? " (the default: a review when the agent ends its work)" : ""}`));
   return items;
 }
 
@@ -306,7 +306,7 @@ export function checkGuards(root, files) {
       ? item("guards", "arch:check row", "missing", `${found.f} configures ${found.tool}, but there is no arch:check row`, { kind: "edit", command: `| \`arch:check\` | \`${found.cmd}\` | |`, scope: "project file" })
       : item("guards", "arch:check row", "warn", "no architecture tool found: the layer rules are checked only by review"));
   }
-  items.push(item("guards", "plugin hooks", "ok", "deny-secrets, wide-commits and health-edit load with the plugin (see /hooks)"));
+  items.push(item("guards", "plugin hooks", "ok", "deny-secrets, wide-commits and health-review load with the plugin (see /hooks)"));
   return items;
 }
 

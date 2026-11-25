@@ -40,7 +40,7 @@ export const DEFAULT_BUDGETS = {
   "params.warn": 5,
   "security.block": "error",
   "digest.max_findings": 5,
-  "hook.edit": "async",
+  "hook.review": "on",
 };
 export const SOURCE_EXT =
   /\.(py|pyi|js|mjs|cjs|jsx|ts|tsx|mts|cts|go|rs|java|kt|kts|scala|rb|php|cs|c|h|cc|cpp|cxx|hpp|swift|m|mm|lua|dart|vue|svelte|sol|ex|exs|erl)$/i;

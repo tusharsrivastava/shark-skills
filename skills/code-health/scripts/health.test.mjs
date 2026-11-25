@@ -60,9 +60,10 @@ describe("AGENTS.md rows", () => {
     assert.deepEqual(cmds, {});
   });
   test("quality budgets override the defaults", () => {
-    const b = readBudgets("## Quality budgets\n\n| Key | Default | Meaning |\n| --- | --- | --- |\n| `ccn.warn` | 8 | x |\n| `hook.edit` | `async` | y |\n");
+    const b = readBudgets("## Quality budgets\n\n| Key | Default | Meaning |\n| --- | --- | --- |\n| `ccn.warn` | 8 | x |\n| `hook.review` | `off` | y |\n| `hook.edit` | `async` | z |\n");
     assert.equal(b["ccn.warn"], 8);
-    assert.equal(b["hook.edit"], "async");
+    assert.equal(b["hook.review"], "off");
+    assert.equal(b["hook.edit"], undefined, "the per-edit hook is gone: its key is not read");
     assert.equal(b["ccn.block"], 20);
   });
 });
