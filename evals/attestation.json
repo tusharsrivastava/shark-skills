@@ -1,11 +1,11 @@
 {
-  "fingerprint": "sha256:fd6dfa163ea946a919ea5de5d2d4735d1a135c5363d072ef666f8fc05535ced4",
-  "files": 228,
-  "ranAt": "2026-11-23T20:41:12.966Z",
+  "fingerprint": "sha256:b629885e6ce56270928405840d2538e8cf7ea4f26497a422ff5cc27cbb801a3b",
+  "files": 246,
+  "ranAt": "2026-11-25T16:41:31.561Z",
   "claudeVersion": "2.1.326",
-  "costUsd": 2.54,
-  "casesPassed": 15,
-  "casesTotal": 15,
+  "costUsd": 2.98,
+  "casesPassed": 17,
+  "casesTotal": 17,
   "cases": [
     {
       "name": "fix-no-comments",
@@ -19,29 +19,29 @@
       "passed": true
     },
     {
-      "name": "health-edit-silent",
-      "tags": [
-        "bash",
-        "code-health"
-      ],
-      "runs": 1,
-      "runsPassed": 1,
-      "score": 1,
-      "passed": true
-    },
-    {
-      "name": "health-edit-sqli",
-      "tags": [
-        "bash",
-        "code-health"
-      ],
-      "runs": 1,
-      "runsPassed": 1,
-      "score": 1,
-      "passed": true
-    },
-    {
       "name": "health-missing-tools",
+      "tags": [
+        "bash",
+        "code-health"
+      ],
+      "runs": 1,
+      "runsPassed": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "health-review-silent",
+      "tags": [
+        "bash",
+        "code-health"
+      ],
+      "runs": 1,
+      "runsPassed": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "health-review-sqli",
       "tags": [
         "bash",
         "code-health"
@@ -86,6 +86,28 @@
     },
     {
       "name": "init-tools-missing",
+      "tags": [
+        "bash",
+        "init"
+      ],
+      "runs": 1,
+      "runsPassed": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "init-workspace-empty",
+      "tags": [
+        "bash",
+        "init"
+      ],
+      "runs": 1,
+      "runsPassed": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "init-workspace-repos",
       "tags": [
         "bash",
         "init"
@@ -157,8 +179,8 @@
         "style"
       ],
       "runs": 3,
-      "runsPassed": 3,
-      "score": 1,
+      "runsPassed": 2,
+      "score": 0.933,
       "passed": true
     },
     {
