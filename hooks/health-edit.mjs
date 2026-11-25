@@ -54,6 +54,22 @@ function stateFile(sessionId) {
   return join(dir, `${String(sessionId || "nosession").replace(/[^\w.-]/g, "_")}.json`);
 }
 
+/**
+ * Claims one finding for the session: true only for the first caller. Async hook entries run in parallel, so the
+ * claim is a file made with the exclusive flag, not a list in the state file (read at the start, written at the end).
+ */
+function claim(sessionId, fp) {
+  const dir = stateFile(sessionId).replace(/\.json$/, ".told");
+  mkdirSync(dir, { recursive: true });
+  try {
+    writeFileSync(join(dir, String(fp).replace(/[^\w.-]/g, "_")), "", { flag: "wx" });
+    return true;
+  } catch (e) {
+    if (e.code === "EEXIST") return false;
+    throw e;
+  }
+}
+
 function loadState(file) {
   try {
     return JSON.parse(readFileSync(file, "utf8"));
@@ -183,7 +199,6 @@ export async function decide(input, { now = Date.now(), async: isAsync = false }
 
   const texts = [];
   const notVerified = [];
-  const told = new Set(state.told ?? []);
   const retold = new Map();
   const deadline = Date.now() + budgetMs(isAsync);
   outer: for (const w of work) {
@@ -199,15 +214,12 @@ export async function decide(input, { now = Date.now(), async: isAsync = false }
       if (r.code === h.EXIT.NEW && r.findings?.length) {
         // The base is the commit at the start of the session, so a finding stays new until it is fixed. Tell each
         // finding one time: the agent has it, and fixes it or accepts it (`baseline allow`).
-        const fresh = r.findings.filter((f) => !told.has(f.fp));
+        const fresh = r.findings.filter((f) => claim(input.session_id, f.fp));
         retold.set(w.project, (retold.get(w.project) ?? 0) + r.findings.length - fresh.length);
         if (fresh.length) texts.push(h.digest(fresh, { scope, budgets: w.project.budgets, notVerified: r.notVerified ?? [], near }));
-        for (const f of fresh) told.add(f.fp);
       } else notVerified.push(...(r.notVerified ?? [])); // a failed analyzer, also when another one ran clean
     }
   }
-  state.told = [...told];
-  save();
   const context = texts.length
     ? texts.join("\n\n")
     : notVerified.length && !state.warned

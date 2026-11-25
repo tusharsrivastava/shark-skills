@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -131,6 +131,25 @@ describe("each finding is told one time for each session", () => {
     const log = readFileSync(join(dir, ".git/shark-health/events.log"), "utf8").trim().split("\n").map((l) => JSON.parse(l));
     assert.deepEqual(log.filter((e) => e.kind !== "start").map((e) => e.kind), ["digest", "told", "digest"]);
   });
+  test("two hook checks that overlap in one session tell a finding one time", async () => {
+    // Async hook entries run in parallel: an Edit check and the next Bash check both start before either one ends.
+    const dir = repo();
+    write(dir, { "src/q.py": UNSAFE });
+    const input = JSON.stringify(edit(dir, "src/q.py", { session_id: `overlap-${process.pid}` }));
+    const env = { ...process.env, FAKE_SAST_SLEEP: "1500" };
+    const run = () =>
+      new Promise((done) => {
+        const p = spawn("node", [HOOK, "--async"], { env });
+        let err = "";
+        p.stderr.on("data", (c) => (err += c));
+        p.on("close", (code) => done({ code, err }));
+        p.stdin.end(input);
+      });
+    const rs = await Promise.all([run(), run()]);
+    const told = rs.filter((r) => /code-health: 1 new/.test(r.err));
+    assert.equal(told.length, 1, rs.map((r) => `${r.code}: ${r.err}`).join(" | "));
+  });
+
   test("another session is told again", async () => {
     const dir = repo();
     write(dir, { "src/q.py": UNSAFE });
