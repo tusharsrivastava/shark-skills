@@ -271,8 +271,9 @@ Report in ASD-STE100: outcome first. Name:
 - the output style in `.claude/settings.json`, a different style in `.claude/settings.local.json`, and whether git
   ignores the shared settings file;
 - each value that is a suggestion and that the user did not confirm;
-- the final `doctor.mjs` result, as a table: item, status (the word that the script printed: `ok`, `warn`,
-  `missing`, `fail`, or "not verified" when the script did not check it), and the fix command. Give each install
+- the final `doctor.mjs` result, as a table with one row for each item that the script printed, also each `ok`
+  item (the user sees which tools, debug adapters and servers were checked): item, status (the word that the script
+  printed: `ok`, `warn`, `missing`, `fail`, or "not verified" when the script did not check it), and the fix command. Give each install
   that ran with its version. Never call a tool ready when the last check did not show it as `ok`;
 - the baseline counts, and that `.shark/health-baseline.json` and `.shark/rules/` are for the user to commit;
 - the next steps for the user:
