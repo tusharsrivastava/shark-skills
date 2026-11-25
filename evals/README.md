@@ -73,7 +73,9 @@ repository does not change.
 
 1. Make a folder `evals/<name>/` with `case.yaml`, `setup.sh`, `prompt.md` and `graders/*.md`. Copy an existing case.
 2. `setup.sh` calls `../_fixtures/setup.sh billing-mini [extras]`. The extras are `env-canary` (`.env` files with
-   canary values) and `team-settings` (a shared `.claude/settings.json`).
+   canary values), `team-settings` (a shared `.claude/settings.json`), `code-health` and `code-health-missing`
+   (a project with analyze rows), `web-ts` (a TypeScript part) and `go-svc` (a Go part; the image has no Go
+   toolchain).
 3. Prefer `regex` and `tool_used` graders. The runner refuses writes to `.claude/settings*.json` (a person must
    approve them), so check the attempted `Write` or `Edit` with `tool_used` and `input_match`, not the file. Use an
    `llm` grader only for a rule that a pattern cannot check.

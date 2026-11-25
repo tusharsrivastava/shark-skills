@@ -1,0 +1,2 @@
+src/format.ts:1: warning: label has 8 NLOC, 4 CCN, 48 token, 2 PARAM, 8 length, 0 ND
+src/pricing.py:1: warning: apply_discounts has 12 NLOC, 7 CCN, 73 token, 3 PARAM, 12 length, 0 ND

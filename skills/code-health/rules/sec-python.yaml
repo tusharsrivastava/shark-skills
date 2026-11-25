@@ -1,0 +1,107 @@
+# shark:code-health starter rules for Python. Written for shark (MIT); not copied from any rule registry.
+# Each message ends with "Fix: ..." so that the digest can show the fix hint.
+rules:
+  - id: sec-sql-string-concat
+    languages: [python]
+    severity: ERROR
+    message: >-
+      SQL text built from a value at run time (string concatenation, f-string or % format) and passed to execute.
+      Fix: use a bound parameter, for example execute("... WHERE id = ?", (value,)).
+    metadata:
+      invariant: injection
+      category: security
+    patterns:
+      - pattern-either:
+          - pattern: $DB.execute($A + $B, ...)
+          - pattern: $DB.execute(f"...", ...)
+          - pattern: $DB.execute($A % $B, ...)
+          - pattern: $DB.execute($S.format(...), ...)
+          - pattern: $DB.executemany($A + $B, ...)
+          - pattern: $DB.executemany(f"...", ...)
+          - pattern: |
+              $Q = $A + $B
+              ...
+              $DB.execute($Q, ...)
+          - pattern: |
+              $Q = f"..."
+              ...
+              $DB.execute($Q, ...)
+          - pattern: |
+              $Q = $A % $B
+              ...
+              $DB.execute($Q, ...)
+          - pattern: |
+              $Q = $S.format(...)
+              ...
+              $DB.execute($Q, ...)
+
+  - id: sec-shell-injection
+    languages: [python]
+    severity: ERROR
+    message: >-
+      A shell command runs with shell=True or os.system on a string that is built at run time.
+      Fix: pass the program and its arguments as a list, without a shell.
+    metadata:
+      invariant: injection
+      category: security
+    pattern-either:
+      - pattern: subprocess.$F($A + $B, ..., shell=True, ...)
+      - pattern: subprocess.$F(f"...", ..., shell=True, ...)
+      - pattern: os.system($A + $B)
+      - pattern: os.system(f"...")
+
+  - id: sec-eval-input
+    languages: [python]
+    severity: ERROR
+    message: >-
+      eval or exec runs text that is not a constant.
+      Fix: parse the value (json.loads, ast.literal_eval, int) or dispatch through a table of allowed names.
+    metadata:
+      invariant: injection
+      category: security
+    patterns:
+      - pattern-either:
+          - pattern: eval($X)
+          - pattern: exec($X)
+      - pattern-not: eval("...")
+      - pattern-not: exec("...")
+
+  - id: sec-unsafe-deserialize
+    languages: [python]
+    severity: ERROR
+    message: >-
+      pickle or yaml.load reads data that can come from outside the process.
+      Fix: use json, or yaml.safe_load.
+    metadata:
+      category: security
+    pattern-either:
+      - pattern: pickle.loads(...)
+      - pattern: pickle.load(...)
+      - pattern: yaml.load($X)
+      - pattern: yaml.load($X, Loader=yaml.Loader)
+
+  - id: sec-weak-hash-password
+    languages: [python]
+    severity: WARNING
+    message: >-
+      md5 or sha1 hashes a value whose name says it is a password or a token.
+      Fix: use a password hash (hashlib.scrypt, argon2, bcrypt) or hmac.compare_digest for tokens.
+    metadata:
+      category: security
+    patterns:
+      - pattern-either:
+          - pattern: hashlib.md5($X)
+          - pattern: hashlib.sha1($X)
+      - metavariable-regex:
+          metavariable: $X
+          regex: (?i).*(passw|pwd|secret|token).*
+
+  - id: sec-tls-verify-off
+    languages: [python]
+    severity: ERROR
+    message: >-
+      An HTTP call turns off TLS certificate checks (verify=False).
+      Fix: keep verify on; give a CA bundle path if the server uses a private CA.
+    metadata:
+      category: security
+    pattern: $HTTP.$M(..., verify=False, ...)

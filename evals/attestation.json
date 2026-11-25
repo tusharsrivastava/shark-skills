@@ -1,17 +1,50 @@
 {
-  "fingerprint": "sha256:d3287aa9835f72ff1023fd5e3c5f60fc159dc9b78f4e21a569bef60a70aa7a54",
-  "files": 185,
-  "ranAt": "2026-11-24T12:49:11.608Z",
+  "fingerprint": "sha256:ab94e106793ef9856c1855b1ea006c82408a0c68e29179015fb7ad27362985c2",
+  "files": 246,
+  "ranAt": "2026-11-25T20:26:35.750Z",
   "claudeVersion": "2.1.326",
-  "costUsd": 2.08,
-  "casesPassed": 12,
-  "casesTotal": 12,
+  "costUsd": 3.06,
+  "casesPassed": 17,
+  "casesTotal": 17,
   "cases": [
     {
       "name": "fix-no-comments",
       "tags": [
         "bash",
         "comments"
+      ],
+      "runs": 1,
+      "runsPassed": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "health-missing-tools",
+      "tags": [
+        "bash",
+        "code-health"
+      ],
+      "runs": 1,
+      "runsPassed": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "health-review-silent",
+      "tags": [
+        "bash",
+        "code-health"
+      ],
+      "runs": 1,
+      "runsPassed": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "health-review-sqli",
+      "tags": [
+        "bash",
+        "code-health"
       ],
       "runs": 1,
       "runsPassed": 1,
@@ -31,6 +64,28 @@
     },
     {
       "name": "init-keeps-settings",
+      "tags": [
+        "bash",
+        "init"
+      ],
+      "runs": 1,
+      "runsPassed": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "init-tools",
+      "tags": [
+        "bash",
+        "init"
+      ],
+      "runs": 1,
+      "runsPassed": 1,
+      "score": 1,
+      "passed": true
+    },
+    {
+      "name": "init-tools-missing",
       "tags": [
         "bash",
         "init"
@@ -136,8 +191,8 @@
         "style"
       ],
       "runs": 3,
-      "runsPassed": 3,
-      "score": 1,
+      "runsPassed": 2,
+      "score": 0.944,
       "passed": true
     }
   ]

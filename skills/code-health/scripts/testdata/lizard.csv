@@ -1,0 +1,6 @@
+8,4,48,2,8,"label@1-8@src/format.ts","src/format.ts","label","label ( kind , count )",1,8
+1,1,4,2,1,"(anonymous)@10-10@src/format.ts","src/format.ts","(anonymous)","(anonymous)",10,10
+1,1,22,1,1,"total@10-10@src/format.ts","src/format.ts","total","total ( xs )",10,10
+12,7,73,3,12,"apply_discounts@1-12@src/pricing.py","src/pricing.py","apply_discounts","apply_discounts( order , rules , * , verbose = False )",1,12
+2,1,16,2,2,"find_customer@15-16@src/pricing.py","src/pricing.py","find_customer","find_customer( db , customer_id )",15,16
+2,1,7,1,2,"size@20-21@src/pricing.py","src/pricing.py","size","size( self )",20,21

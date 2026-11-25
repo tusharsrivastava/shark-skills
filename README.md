@@ -106,6 +106,8 @@ It will:
 - Ask for each value it can't find, with a suggested value for each
 - Set the project's output style to `shark:asd-ste100` in `.claude/settings.json`, so replies are short, outcome-first
   and end with a summary and action items
+- Check the tools behind the hooks, the guards and the debugger for each language of the project (debug adapters,
+  the code-health analyzers, rules and baseline), and install the missing ones at pinned versions after your yes
 
 The skills never hardcode a command. They run a key from your `Commands` table, so the same kit works on Python,
 JS/TS, Go, or anything with a test command.
@@ -310,8 +312,9 @@ production-scale systems, distilled into this setup.
 
 - **[/shark:init](./skills/init/SKILL.md)**: Set up a project once. Brings your `AGENTS.md` or `CLAUDE.md` in line
   with the **shark** template, so every session starts with the operator, or with your own orchestrator if you keep
-  it. Sets the `shark:asd-ste100` output style for the project. In a folder that isn't a repository, sets up a
-  multi-repo workspace for the repositories you name.
+  it. Sets the `shark:asd-ste100` output style for the project. Checks and sets up the debugger and code-health tools
+  for each language (`skills/init/scripts/doctor.mjs`, which you can run again at any time). In a folder that isn't a
+  repository, sets up a multi-repo workspace for the repositories you name.
 - **[/shark:operator](./skills/operator/SKILL.md)**: Run the session. Sets the mode, writes the briefs, routes the
   work to agents, and checks what comes back. Loads by itself after `/shark:init`.
 - **[/shark:handoff](./skills/handoff/SKILL.md)**: Record and prune the handoff file, so the next session picks up
@@ -340,6 +343,8 @@ production-scale systems, distilled into this setup.
   `lead-engineer`: regression safety with a test baseline, scope, test first, logging, comments.
 - **[/shark:solution-spec](./skills/solution-spec/SKILL.md)**: Close a spec before a Sonnet writer builds it: the
   guards on the path, a behaviour table with a test for each row, the decisions, an adversarial check.
+- **[/shark:code-health](./skills/code-health/SKILL.md)**: A review of the new security, complexity and architecture
+  findings when the agent ends its work, from the analyzers that AGENTS.md names (Opengrep, Lizard, any SARIF tool), against a committed baseline.
 
 **Agents**
 
