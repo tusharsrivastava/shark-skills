@@ -1,9 +1,9 @@
 {
-  "fingerprint": "sha256:93475b210cf34bae6d6f43585c100a59cc83985524810bb9c3b733bda6e89e0c",
-  "files": 246,
-  "ranAt": "2026-11-25T22:34:31.639Z",
+  "fingerprint": "sha256:6b40647a1f0be6989d819bd789e03d212be66df7d88996b16b33217eda758116",
+  "files": 251,
+  "ranAt": "2026-11-26T13:44:16.339Z",
   "claudeVersion": "2.1.326",
-  "costUsd": 2.98,
+  "costUsd": 2.95,
   "casesPassed": 17,
   "casesTotal": 17,
   "cases": [
@@ -191,8 +191,8 @@
         "style"
       ],
       "runs": 3,
-      "runsPassed": 3,
-      "score": 1,
+      "runsPassed": 2,
+      "score": 0.889,
       "passed": true
     }
   ]
