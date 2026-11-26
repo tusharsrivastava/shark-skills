@@ -30,6 +30,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isLizard, lizardToSarif, parseLizard } from "./lizard2sarif.mjs";
 import { category, displayRule, fingerprint, flatten, functionsOf, hash, LEVELS, parseSarif, toSarif } from "./sarif.mjs";
+import { toolEnv } from "./toolenv.mjs";
 
 export const EXIT = { CLEAN: 0, NEW: 1, USAGE: 2, MISSING: 3, ANALYZER: 4 };
 export const DEFAULT_BUDGETS = {
@@ -168,9 +169,11 @@ function parseOutput(text, cmd, status, stderr, budgets) {
  *
  * @param {string[]} cmds The commands.
  * @param {{ file?: string, base?: string }[]} sides Placeholder values, one set for each side.
+ * The commands run with the shark tool folder first on PATH (toolenv.mjs), so `opengrep` and `lizard` need no PATH
+ * setup on the machine.
  * @returns {{ log: object, errors: string[], failed: boolean }[]} One result for each side.
  */
-export function runSides(cmds, sides, { cwd, timeoutMs = 600000, budgets = DEFAULT_BUDGETS } = {}) {
+export function runSides(cmds, sides, { cwd, timeoutMs = 600000, budgets = DEFAULT_BUDGETS, env = toolEnv() } = {}) {
   const deadline = Date.now() + timeoutMs;
   const res = sides.map(() => ({ logs: [], errors: [] }));
   const tmp = mkdtempSync(join(tmpdir(), "shark-health-"));
@@ -189,7 +192,7 @@ export function runSides(cmds, sides, { cwd, timeoutMs = 600000, budgets = DEFAU
           .replace(/\{out\}/g, shq(f(k, "out")));
         return `( ( ${line} ) > ${shq(f(k, "stdout"))} 2> ${shq(f(k, "stderr"))}; echo $? > ${shq(f(k, "rc"))} ) &`;
       });
-      const r = spawnSync("sh", ["-c", `${parts.join("\n")}\nwait`], { cwd, encoding: "utf8", timeout: left, killSignal: "SIGKILL" });
+      const r = spawnSync("sh", ["-c", `${parts.join("\n")}\nwait`], { cwd, env, encoding: "utf8", timeout: left, killSignal: "SIGKILL" });
       const timedOut = r.error?.code === "ETIMEDOUT" || r.signal === "SIGKILL";
       sides.forEach((_, k) => {
         const read = (name) => (existsSync(f(k, name)) ? readFileSync(f(k, name), "utf8") : "");

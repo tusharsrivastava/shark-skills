@@ -30,8 +30,11 @@ Status: observed in several sessions with pytest.
   `SyntaxError: source code string cannot contain null bytes`. The start then returns `"state": "stopped"`, and
   the next call says "Session is terminated". Only the output shows the cause. A driver script that calls
   `pytest.main([...])` also works as `scriptPath`.
-- First check: `<venv>/bin/python -c "import debugpy"`. If the import fails, install `debugpy` into a local
-  environment only (for example a worktree environment), never into the lock file.
+- **debugpy comes from the shark tool folder.** The MCP server of the kit puts it on `PYTHONPATH`, so each project
+  interpreter can import it without an install in the project. If the start says "debugpy not installed", run
+  `/shark:doctor` (it installs the pinned debugpy into that folder after a yes). Never install debugpy into the
+  project environment or its lock file. When `adapterLaunchConfig.env` sets `PYTHONPATH`, keep the shark folder in
+  it: the server environment has it.
 - `-p no:cacheprovider` keeps pytest from writing its cache during the run. Turn off `pytest-xdist` workers
   (`-p no:xdist` or `-n 0`): a worker is a second process, and it can build a new test database.
 - If the default options of the project leave out a test marker (for example integration tests), add the marker

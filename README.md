@@ -313,8 +313,11 @@ production-scale systems, distilled into this setup.
 - **[/shark:init](./skills/init/SKILL.md)**: Set up a project once. Brings your `AGENTS.md` or `CLAUDE.md` in line
   with the **shark** template, so every session starts with the operator, or with your own orchestrator if you keep
   it. Sets the `shark:asd-ste100` output style for the project. Checks and sets up the debugger and code-health tools
-  for each language (`skills/init/scripts/doctor.mjs`, which you can run again at any time). In a folder that isn't a
-  repository, sets up a multi-repo workspace for the repositories you name.
+  for each language. In a folder that isn't a repository, sets up a multi-repo workspace for the repositories you
+  name.
+- **[/shark:doctor](./skills/doctor/SKILL.md)**: Check the shark tools at any time: the debugger, the debug adapters,
+  the code-health analyzers, rules and baseline. Installs the pinned fixes into one shark tool folder (the plugin data
+  folder), never into your system Python or your project environment.
 - **[/shark:operator](./skills/operator/SKILL.md)**: Run the session. Sets the mode, writes the briefs, routes the
   work to agents, and checks what comes back. Loads by itself after `/shark:init`.
 - **[/shark:handoff](./skills/handoff/SKILL.md)**: Record and prune the handoff file, so the next session picks up

@@ -92,8 +92,9 @@ Commands, and run `health.mjs rules add` to copy the starter rules of this skill
 | `analyze:diff` | none (shark runs `analyze:file` on each changed file) |
 | `analyze:full` | `opengrep scan --quiet --disable-version-check -f .shark/rules --sarif-output={out} .` and `lizard --csv .` |
 
-- Install Opengrep with `scripts/install-opengrep.sh` (the release binary, with its SHA-256 checked), never from
-  PyPI (a malicious package uses the name). Keep
+- `/shark:doctor` installs Opengrep (the release binary, with its SHA-256 checked) and Lizard (hash checked) into the
+  shark tool folder, and shark runs them from there with no PATH setup. Never install Opengrep from PyPI (a
+  malicious package uses the name). Keep
   `--disable-version-check`. Do not use `--experimental`: in 1.33.1 it found nothing on the starter rules.
 - One Opengrep 1.x scan of one file takes about 2 s, mostly start-up (p95 2.2 to 2.3 s, measured 2026-11-21). Shark
   scans the file and its base version in parallel. The review runs one time when you finish, not after each edit:

@@ -10,7 +10,8 @@
  * cannot loop. A later review checks only the files that changed since their last review; when none changed, it
  * only runs `git` (milliseconds).
  *
- * `node health-review.mjs start` (SessionStart) records the commit of each repository at the session start: the
+ * `node health-review.mjs start` (SessionStart) also records the plugin root in the plugin data folder (toolenv.mjs),
+ * and records the commit of each repository at the session start: the
  * base of the review, so changes that the agent commits are reviewed too. Without that record, the base is the commit
  * at the first review.
  *
@@ -25,6 +26,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, stat
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { recordDataDir } from "../skills/code-health/scripts/toolenv.mjs";
 
 const HEALTH = fileURLToPath(new URL("../skills/code-health/scripts/health.mjs", import.meta.url));
 const AGENTS = /(^|:)(code-writer|lead-engineer)$/;
@@ -259,7 +261,11 @@ function main() {
       process.exit(0);
     }
     try {
-      if (process.argv.includes("start")) await start(input);
+      if (process.argv.includes("start")) {
+        // Before the review base, so that a missing project file cannot skip it.
+        recordDataDir();
+        await start(input);
+      }
       else {
         const r = await review(input);
         if (r?.block) process.stdout.write(JSON.stringify({ decision: "block", reason: r.block }));

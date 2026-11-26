@@ -6,18 +6,21 @@
 // It finds the languages of the repository, then checks each part: the mcp-debugger server and the debug adapter of
 // each language, the code-health analyzers, rules, rows and baseline, and the guard sections of AGENTS.md. Each item
 // that is not ok has a fix: a pinned install command, a file to copy, or a row to add. The script never installs or
-// writes anything: init shows the fixes and runs them after the user says yes.
+// writes anything: init and /shark:doctor show the fixes and run them after the user says yes.
+//
+// Opengrep, Lizard and debugpy come from the shark tool folder (toolenv.mjs: the plugin data folder), which
+// install-tools.sh fills. A tool on the PATH of the machine, or debugpy in the project environment, also counts.
 //
 // Exit codes: 0 every item ok (warnings allowed), 1 an item is missing or failed, 2 usage error.
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { cmdFile, loadProject, optedIn, readCommands } from "../../code-health/scripts/health.mjs";
+import { dataDir, debugpyEnv, PLUGIN_ROOT, toolEnv } from "../../code-health/scripts/toolenv.mjs";
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-export const PLUGIN_ROOT = resolve(HERE, "../../..");
+export { PLUGIN_ROOT };
 
 /** Pinned versions. Each one was at least two weeks old when it was pinned (2026-11-22). */
 export const PINS = {
@@ -117,18 +120,26 @@ function which(name, env) {
   return r.ok ? r.out.split("\n")[0] : null;
 }
 
-/** The command that installs a Python command-line tool for this user, not into the project. */
-function pyToolInstall(pkg, env) {
-  if (which("pipx", env)) return `pipx install ${pkg}`;
-  if (which("uv", env)) return `uv tool install ${pkg}`;
-  return `python3 -m pip install --user ${pkg}`;
+/** The fix that installs one tool into the shark tool folder. */
+function toolFix(tool, data) {
+  return { kind: "install", command: `sh "${join(PLUGIN_ROOT, "skills/init/scripts/install-tools.sh")}" --dir "${data}" ${tool}`, scope: "shark tool folder" };
+}
+
+/** The check of the one machine need of install-tools.sh: python3 3.9 or later, with the venv module. */
+function checkPythonVenv(env) {
+  const r = run("python3", ["-c", "import sys, venv, ensurepip; print(sys.version.split()[0]); sys.exit(0 if sys.version_info >= (3, 9) else 3)"], { env });
+  if (r.ok) return item("tools", "python3 venv", "ok", `python3 ${versionOf(r.out)} with venv: install-tools.sh makes the shark environment`);
+  const why = r.missing ? "python3 not found" : r.status === 3 ? `python3 ${versionOf(r.out)} is older than 3.9` : "python3 has no venv module";
+  return item("tools", "python3 venv", "missing", `${why}: Lizard and debugpy install into a shark virtual environment`, {
+    kind: "install", command: "Install Python 3.9 or later with venv (Debian and Ubuntu: the python3-venv package)", scope: "machine",
+  });
 }
 
 // ---------------------------------------------------------------- checks
 
 const item = (area, name, status, detail, fix = null) => ({ area, item: name, status, detail, ...(fix ? { fix } : {}) });
 
-export function checkDebugger(root, langs, { env = process.env } = {}) {
+export function checkDebugger(root, langs, { env = process.env, data = dataDir(env) } = {}) {
   const items = [];
   let mcp = null;
   try {
@@ -152,15 +163,15 @@ export function checkDebugger(root, langs, { env = process.env } = {}) {
 
   for (const lang of Object.keys(langs)) {
     if (lang === "python") {
+      // The project's interpreter, with the shark debugpy on PYTHONPATH (what the MCP server and debuggee.mjs give it).
       const py = projectPython(root);
-      const r = run(py.cmd, ["-c", "import debugpy; print(debugpy.__version__)"], { cwd: root, env });
-      const where = py.venv ? `the project environment ${py.venv}/` : "python3 (no project virtual environment found)";
-      if (r.ok) items.push(item("debugger", "python: debugpy", "ok", `debugpy ${versionOf(r.out)} in ${where}`));
-      else items.push(item("debugger", "python: debugpy", "missing", r.missing ? `${py.cmd} not found` : `debugpy is not installed in ${where}`, {
-        kind: "install",
-        command: py.venv ? `${py.venv}/bin/python -m pip install debugpy==${PINS.debugpy}` : `python3 -m pip install debugpy==${PINS.debugpy}  (activate the project environment first)`,
-        scope: "project environment",
-      }));
+      const r = run(py.cmd, ["-c", "import debugpy; print(debugpy.__version__); print(debugpy.__file__)"], { cwd: root, env: debugpyEnv(env, data) });
+      const interp = py.venv ? `the project environment ${py.venv}/` : "python3 (no project virtual environment)";
+      if (r.ok) {
+        const [ver, file] = r.out.split("\n");
+        const from = file?.startsWith(join(data, "debugpy")) ? "the shark tool folder" : "the project environment";
+        items.push(item("debugger", "python: debugpy", "ok", `debugpy ${versionOf(ver)} from ${from}, for ${interp}`));
+      } else items.push(item("debugger", "python: debugpy", "missing", r.missing ? `${py.cmd} not found` : `${interp} cannot import debugpy`, toolFix("debugpy", data)));
     } else if (lang === "javascript" || lang === "typescript") {
       const r = run("node", ["--version"], { env });
       const v = versionOf(r.out);
@@ -183,8 +194,9 @@ export function checkDebugger(root, langs, { env = process.env } = {}) {
   return items;
 }
 
-export function checkCodeHealth(root, langs, { env = process.env, smoke = true } = {}) {
+export function checkCodeHealth(root, langs, { env = process.env, data = dataDir(env), smoke = true } = {}) {
   const items = [];
+  const tenv = toolEnv(env, data);
   const project = loadProject(root);
   const rows = readCommands(project.text);
   const opted = optedIn(project.text);
@@ -194,18 +206,18 @@ export function checkCodeHealth(root, langs, { env = process.env, smoke = true }
 
   if (wants("opengrep")) {
     const bin = /(^|\s)(\S*opengrep)(?=\s)/.exec(rowText)?.[2] ?? "opengrep";
-    const r = run(bin, ["--version"], { cwd: root, env });
+    const r = run(bin, ["--version"], { cwd: root, env: tenv });
     const v = versionOf(r.out);
-    const fix = { kind: "install", command: `sh "${join(PLUGIN_ROOT, "skills/code-health/scripts/install-opengrep.sh")}"`, scope: "user (~/.local/bin)" };
+    const fix = toolFix("opengrep", data);
     if (!r.ok || !v) items.push(item("code-health", "opengrep", "missing", `${bin} not found (install the signed release binary, never the PyPI package)`, fix));
     else if (cmpVersion(v, PINS.opengrepMinSafe) < 0) items.push(item("code-health", "opengrep", "fail", `opengrep ${v} has the 2026-11-10 security advisories; ${PINS.opengrepMinSafe} or later fixes them`, fix));
     else if (v !== PINS.opengrep) items.push(item("code-health", "opengrep", "warn", `opengrep ${v}; shark tested ${PINS.opengrep}`));
     else items.push(item("code-health", "opengrep", "ok", `opengrep ${v}`));
   }
   if (wants("lizard")) {
-    const r = run("lizard", ["--version"], { cwd: root, env });
+    const r = run("lizard", ["--version"], { cwd: root, env: tenv });
     const v = versionOf(r.out);
-    if (!r.ok || !v) items.push(item("code-health", "lizard", "missing", "lizard not found", { kind: "install", command: pyToolInstall(`lizard==${PINS.lizard}`, env), scope: "user" }));
+    if (!r.ok || !v) items.push(item("code-health", "lizard", "missing", "lizard not found", toolFix("lizard", data)));
     else items.push(item("code-health", "lizard", v === PINS.lizard ? "ok" : "warn", v === PINS.lizard ? `lizard ${v}` : `lizard ${v}; shark tested ${PINS.lizard}`));
   }
 
@@ -311,12 +323,18 @@ export function checkGuards(root, files) {
 }
 
 export function doctor(root, opts = {}) {
+  const env = opts.env ?? process.env;
+  const o = { ...opts, env, data: opts.data ?? dataDir(env) };
   const files = listFiles(root);
   const langs = detectLanguages(files);
-  const items = [...checkDebugger(root, langs, opts), ...checkCodeHealth(root, langs, opts), ...checkGuards(root, files)];
+  const checks = [...checkDebugger(root, langs, o), ...checkCodeHealth(root, langs, o)];
+  // install-tools.sh needs python3 with venv only for Lizard and debugpy.
+  const needsVenv = checks.some((i) => i.fix?.command.includes("install-tools.sh") && / (lizard|debugpy)$/.test(i.fix.command));
+  const items = [...(needsVenv ? [checkPythonVenv(env)] : []), ...checks, ...checkGuards(root, files)];
   const count = (s) => items.filter((i) => i.status === s).length;
   return {
     root,
+    toolFolder: o.data,
     languages: Object.fromEntries(Object.entries(langs).map(([l, f]) => [l, f.length])),
     items,
     summary: { ok: count("ok"), warn: count("warn"), missing: count("missing"), fail: count("fail") },
@@ -325,7 +343,7 @@ export function doctor(root, opts = {}) {
 
 export function format(report) {
   const langs = Object.entries(report.languages).map(([l, n]) => `${l} (${n})`).join(", ") || "none found";
-  const lines = [`shark doctor: ${report.root}`, `Languages: ${langs}`, "", "| Status | Area | Item | Detail | Fix |", "| --- | --- | --- | --- | --- |"];
+  const lines = [`shark doctor: ${report.root}`, `Languages: ${langs}`, `Tool folder: ${report.toolFolder}`, "", "| Status | Area | Item | Detail | Fix |", "| --- | --- | --- | --- | --- |"];
   for (const i of report.items) {
     const fix = i.fix ? `${i.fix.command.replace(/\|/g, "\\|")} (${i.fix.scope})` : "";
     lines.push(`| ${i.status} | ${i.area} | ${i.item} | ${i.detail.replace(/\|/g, "\\|")} | ${fix} |`);
