@@ -24,6 +24,7 @@ import { createConnection, createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { debugpyEnv } from "../../code-health/scripts/toolenv.mjs";
 
 export const STATE_DIR = process.env.SHARK_DEBUGGEE_DIR || join(tmpdir(), "shark-debuggee");
 
@@ -119,7 +120,8 @@ export async function start({ cmd, cwd = process.cwd(), port, timeout = 60, read
   const log = join(STATE_DIR, `${id}.log`);
   const fd = openSync(log, "a");
   const command = cmd.replaceAll("{port}", String(chosen));
-  const child = spawn("/bin/sh", ["-c", command], { cwd: resolve(cwd), detached: true, stdio: ["ignore", fd, fd] });
+  // The shark debugpy is first on PYTHONPATH, so `python -m debugpy` works with the project's own interpreter.
+  const child = spawn("/bin/sh", ["-c", command], { cwd: resolve(cwd), env: debugpyEnv(), detached: true, stdio: ["ignore", fd, fd] });
   child.unref();
   closeSync(fd);
   const state = { id, pid: child.pid, port: chosen, host: "127.0.0.1", log, cwd: resolve(cwd), command, startedAt: new Date().toISOString() };

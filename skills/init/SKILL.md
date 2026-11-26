@@ -39,10 +39,12 @@ The template is `${CLAUDE_PLUGIN_ROOT}/AGENTS.md`. Read it first. It has three p
 4. **Show the change before you write it.** Show a short summary and the new sections. Write only after the user
    says yes.
 5. **Do not commit.** Tell the user which files changed. The commit is a decision of the user.
-6. **Install only after a yes, and only the commands that `doctor.mjs` prints.** They are pinned. Never install
-   Opengrep from PyPI (a malicious package uses the name), never use `sudo`, and never install a Python debug
-   adapter outside the project environment. When the user says "do not install", list the commands and install
-   nothing.
+6. **Install only after a yes, and only the commands that `doctor.mjs` prints.** They are pinned and hash checked,
+   and `install-tools.sh` puts Opengrep, Lizard and debugpy in the shark tool folder (the plugin data folder), the
+   same on each machine. Never install Opengrep from PyPI (a malicious package uses the name), never use `sudo`,
+   never use `--break-system-packages`, and never install a shark tool into the system Python or the project
+   environment. A `machine` fix (for example the `python3-venv` package) is for the user to do. When the user says
+   "do not install", list the commands and install nothing.
 7. **Exactly one start rule.** After the run, the project file has one instruction about what runs first in a
    session. Never add a second one next to an orchestrator that the project already uses.
 7. **Never invent a repository.** In a workspace, use only the repositories that the scan finds and the user picks,
@@ -173,11 +175,13 @@ Run the check script:
 node "${CLAUDE_PLUGIN_ROOT:-<directory of this skill>/../..}/skills/init/scripts/doctor.mjs" --no-smoke
 ```
 
-It finds the languages of the repository and checks each part. It installs and writes nothing.
+It finds the languages of the repository and checks each part. It installs and writes nothing. `/shark:doctor` runs
+the same script at any time.
 
 | Area | Items |
 | --- | --- |
-| debugger | The `mcp-debugger` server in the npm cache; `.claude/mcp-debugger.log` in `.gitignore`; the debug adapter of each language (Python: `debugpy` in the project environment; JS/TS: Node 18 or later; Go: Delve) |
+| debugger | The `mcp-debugger` server in the npm cache; `.claude/mcp-debugger.log` in `.gitignore`; the debug adapter of each language (Python: `debugpy` from the shark tool folder or the project environment; JS/TS: Node 18 or later; Go: Delve) |
+| tools | `python3` 3.9 or later with `venv`, only when Lizard or debugpy must be installed |
 | code-health | Opengrep (the fixed version or later) and Lizard; the starter rules for each language in `.shark/rules/`; the `analyze:file` and `analyze:full` rows; the baseline |
 | guards | The `## Secrets` lists (`deny-secrets`), the `## Invariants` rules (`shark:invariant-guard`), the `arch:check` row |
 
@@ -185,7 +189,8 @@ Each row has a status (`ok`, `warn`, `missing`, `fail`) and, when it is not ok, 
 nothing missing. Exit code `1`: one or more items are missing or failed. Put the fixes in the message of step 7, in
 three groups:
 
-1. **Installs** (each with its scope: the project environment, the user tool folder, the npm cache).
+1. **Installs** (each with its scope: the shark tool folder, the npm cache, the machine). The report of the script
+   names the tool folder.
 2. **Files** that init adds: the starter rules in `.shark/rules/`, the `.gitignore` line.
 3. **Rows** that init adds to `## Commands`.
 
@@ -280,7 +285,7 @@ Report in ASD-STE100: outcome first. Name:
   - start a new session, so that Claude Code reads the new project file and the output style;
   - check the two lists in `## Secrets`: the `deny-secrets` hook of the kit reads them and refuses tool calls on those
     files;
-  - run `doctor.mjs` again after a new language or a new machine.
+  - run `/shark:doctor` again after a new language or a new machine.
 
 Do not commit the files.
 

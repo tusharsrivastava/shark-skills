@@ -259,7 +259,8 @@ Use attach when the test runs in a container, on another host, or under an inter
 launch.
 
 1. Start the test under a listener that waits for the debugger before the test starts. Examples:
-   - Python: `python -m debugpy --listen 0.0.0.0:5678 --wait-for-client -m pytest <test id>`;
+   - Python: `python -m debugpy --listen 0.0.0.0:5678 --wait-for-client -m pytest <test id>` (`debuggee.mjs start`
+     puts the shark debugpy on `PYTHONPATH`; in a container, install debugpy there);
    - Node: `node --inspect-brk=0.0.0.0:9229 <runner entry> <test file>`.
 2. Publish the port of the container (for example `-p 5678:5678`).
 3. Wait until the listener is up. An attach before the listener is up fails with "Proxy exited during
